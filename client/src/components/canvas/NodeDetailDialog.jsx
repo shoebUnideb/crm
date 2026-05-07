@@ -1,5 +1,6 @@
 import React, { useState, useEffect, useRef, useCallback } from 'react'
 import { useNavigate } from 'react-router-dom'
+import InlineCRMModal from './InlineCRMModal.jsx'
 
 // ── Design tokens ─────────────────────────────────────────────────────────────
 const navy    = '#172B4D'
@@ -123,6 +124,7 @@ function InlineSelect({ value, options, onChange, disabled }) {
 export default function NodeDetailDialog({
   node,
   nodes          = {},
+  projectId,
   onSave,
   onAddComment,
   onDeleteComment,
@@ -149,6 +151,7 @@ export default function NodeDetailDialog({
   const [commentText, setCommentText]     = useState('')
   const [workLogText, setWorkLogText]     = useState('')
   const [workLogHours, setWorkLogHours]   = useState('')
+  const [showCRMModal, setShowCRMModal]   = useState(false)
 
   // Title editing
   const [editingTitle, setEditingTitle]   = useState(false)
@@ -335,7 +338,7 @@ export default function NodeDetailDialog({
               </span>
             )}
             <button
-              onClick={() => { onClose(); navigate('/crm', { state: { newDeal: { node_id: node.id, node_key: node.nodeKey || '', company_name: node.title || '' } } }) }}
+              onClick={() => setShowCRMModal(true)}
               title="Track this node as a CRM deal"
               style={{ background: '#EFF6FF', border: '1.5px solid #BFDBFE', borderRadius: 6, cursor: 'pointer', padding: '6px 16px', fontSize: 12, fontWeight: 600, color: '#1D4ED8', lineHeight: 1, letterSpacing: '0.01em' }}
               onMouseEnter={e => { e.currentTarget.style.background = '#DBEAFE' }}
@@ -855,6 +858,16 @@ export default function NodeDetailDialog({
           </div>
         </div>
       </div>
+
+      {showCRMModal && (
+        <InlineCRMModal
+          nodeId={node.id}
+          nodeKey={node.nodeKey || ''}
+          companyName={node.title || ''}
+          projectId={projectId}
+          onClose={() => setShowCRMModal(false)}
+        />
+      )}
     </div>
   )
 }

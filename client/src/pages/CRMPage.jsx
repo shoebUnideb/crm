@@ -1,6 +1,8 @@
 import React, { useState, useEffect, useCallback, useRef } from 'react'
 import { useNavigate, useLocation } from 'react-router-dom'
 import { crmApi } from '../lib/crmApi.js'
+import { linksApi } from '../lib/linksApi.js'
+import { eventBus, EVENTS } from '../lib/eventBus.js'
 
 // ── Constants ──────────────────────────────────────────────────────────────────
 const STAGES = [
@@ -384,8 +386,14 @@ export default function CRMPage() {
         next_action: deal.next_action, notes: deal.notes, last_contact_at: deal.last_contact_at,
         expected_close_date: deal.expected_close_date, linkedin_url: deal.linkedin_url,
         follow_up_at: deal.follow_up_at, lost_reason: deal.lost_reason, tags: deal.tags,
-        assigned_to: deal.assigned_to, node_id: nodeId, node_key: nodeKey,
+        assigned_to: deal.assigned_to, node_id: nodeId, node_key: nodeKey, project_id: targetProjId,
       })
+      await linksApi.create({
+        source_type: 'node', source_id: nodeId, source_key: nodeKey,
+        target_type: 'crm_deal', target_id: String(deal.id),
+        relation: 'linked_to', project_id: targetProjId,
+      }).catch(() => {})
+      eventBus.emit(EVENTS.CRM_DEAL_LINKED, { nodeId, dealId: deal.id })
       setDeals(ds => ds.map(d => d.id === deal.id ? updated : d))
       if (panelDeal?.id === deal.id) setPanelDeal(updated)
       setCanvasPicker(null)
@@ -399,6 +407,9 @@ export default function CRMPage() {
 
   async function handleUnlinkCanvas(deal) {
     try {
+      if (deal.node_id) {
+        await linksApi.removeBySource('node', deal.node_id).catch(() => {})
+      }
       const updated = await crmApi.updateDeal(deal.id, {
         company_name: deal.company_name, contact_name: deal.contact_name, contact_email: deal.contact_email,
         deal_value: deal.deal_value, stage: deal.stage, probability: deal.probability,
@@ -409,6 +420,7 @@ export default function CRMPage() {
       })
       setDeals(ds => ds.map(d => d.id === deal.id ? updated : d))
       if (panelDeal?.id === deal.id) setPanelDeal(updated)
+      eventBus.emit(EVENTS.CRM_DEAL_UNLINKED, { nodeId: deal.node_id, dealId: deal.id })
     } catch (e) {
       // silent — user will see the button is still there
     }

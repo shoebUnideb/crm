@@ -32,6 +32,7 @@ import ResourceHeatmap from './ResourceHeatmap.jsx'
 import { useToast, ToastContainer } from './Toast.jsx'
 import { exportCSV, generateConfluenceMarkup, encodeShareLink, importCSV, exportMarkdown, parseTextAsTree } from '../../lib/exportUtils.js'
 import CustomFieldsManager from './CustomFieldsManager.jsx'
+import { useNodeLinks } from '../../hooks/useNodeLinks.js'
 
 const PAL_W = 340
 const PAL_H = 144
@@ -151,6 +152,8 @@ export default function Canvas({
     onMouseDown: panMouseDown, onMouseMove: panMouseMove, onMouseUp: panMouseUp,
     resetView, centerView, zoomIn, zoomOut, fitToContent, panToCenter, setScale, panDist,
   } = usePanZoom()
+
+  const { linkMap } = useNodeLinks(projectId)
 
   const { nodes, rootId, selectedNodeId, extraEdges: _extraEdges, groups = [] } = treeState
 
@@ -1603,6 +1606,7 @@ export default function Canvas({
             depsOnlyView={depsOnlyView}
             curved={curvedEdges}
             nodeSizeOverrides={nodeSizeOverrides}
+            linkMap={linkMap}
             onSelectNode={onSelectNode}
             onDeselect={onDeselect}
             onStopEditing={(trigger) => {
@@ -2253,6 +2257,7 @@ export default function Canvas({
         <NodeDetailDialog
           node={nodes[nodeDetailId]}
           nodes={nodes}
+          projectId={projectId}
           onSave={(nodeId, meta) => onSetNodeMeta?.(nodeId, meta)}
           onAddComment={onAddComment}
           onDeleteComment={onDeleteComment}

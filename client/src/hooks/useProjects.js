@@ -15,6 +15,7 @@ import { saveProjectsData, loadProjectsData, saveProjectsDataSession, loadProjec
 import { computeLayout } from './useLayout.js'
 import { fireWebhooks } from '../lib/webhookClient.js'
 import { projectsApi } from '../lib/projectsApi.js'
+import { eventBus, EVENTS } from '../lib/eventBus.js'
 
 const HISTORY_LIMIT = 50
 
@@ -252,6 +253,7 @@ export function useProjects(userId) {
       fireWebhooks('node_created', { nodeTitle: 'New node', parentTitle: nodeTitle(action.parentId), projectName })
     } else if (action.type === DELETE_NODE) {
       fireWebhooks('node_deleted', { nodeTitle: nodeTitle(action.nodeId), projectName })
+      eventBus.emit(EVENTS.NODE_DELETED, { nodeId: action.nodeId })
     } else if (action.type === ADD_NODE_COMMENT) {
       fireWebhooks('comment_added', { nodeTitle: nodeTitle(action.nodeId), text: action.text, author: action.author || 'You', projectName })
     } else if (action.type === REPARENT_NODE) {

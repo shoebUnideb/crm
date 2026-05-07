@@ -22,7 +22,7 @@ router.post('/deals', async (req, res, next) => {
     const {
       company_name, contact_name, contact_email, deal_value, stage,
       next_action, notes, last_contact_at, expected_close_date, probability,
-      linkedin_url, follow_up_at, node_id, node_key, tags, assigned_to,
+      linkedin_url, follow_up_at, node_id, node_key, tags, assigned_to, project_id,
     } = req.body
     if (!company_name?.trim()) return res.status(400).json({ error: 'Company name is required' })
     const s = stage || 'lead'
@@ -38,7 +38,18 @@ router.post('/deals', async (req, res, next) => {
        linkedin_url||null, follow_up_at||null, node_id||null, node_key||null,
        tags||'', assigned_to||null]
     )
-    res.status(201).json(r.rows[0])
+    const deal = r.rows[0]
+
+    if (node_id) {
+      await query(
+        `INSERT INTO entity_links (source_type, source_id, source_key, target_type, target_id, relation, user_id, project_id)
+         VALUES ('node', $1, $2, 'crm_deal', $3, 'linked_to', $4, $5)
+         ON CONFLICT (source_type, source_id, target_type, target_id, relation) WHERE deleted_at IS NULL DO NOTHING`,
+        [node_id, node_key || null, String(deal.id), uid(req), project_id || null]
+      )
+    }
+
+    res.status(201).json(deal)
   } catch (e) { next(e) }
 })
 
@@ -47,12 +58,15 @@ router.put('/deals/:id', async (req, res, next) => {
     const {
       company_name, contact_name, contact_email, deal_value, stage,
       next_action, notes, last_contact_at, expected_close_date, probability,
-      linkedin_url, follow_up_at, node_id, node_key, lost_reason, tags, assigned_to,
+      linkedin_url, follow_up_at, node_id, node_key, lost_reason, tags, assigned_to, project_id,
     } = req.body
     if (!company_name?.trim()) return res.status(400).json({ error: 'Company name is required' })
     const s = stage || 'lead'
-    const existing = await query('SELECT stage FROM crm_deals WHERE id=$1 AND user_id=$2', [parseInt(req.params.id), uid(req)])
-    const stageChanged = existing.rows[0]?.stage !== s
+    const dealId = parseInt(req.params.id)
+    const existing = await query('SELECT stage, node_id FROM crm_deals WHERE id=$1 AND user_id=$2', [dealId, uid(req)])
+    if (!existing.rows[0]) return res.status(404).json({ error: 'Deal not found' })
+    const stageChanged = existing.rows[0].stage !== s
+    const oldNodeId = existing.rows[0].node_id
     const r = await query(
       `UPDATE crm_deals SET
          company_name=$1, contact_name=$2, contact_email=$3, deal_value=$4, stage=$5,
@@ -67,9 +81,26 @@ router.put('/deals/:id', async (req, res, next) => {
        next_action||null, notes||null, last_contact_at||null, expected_close_date||null,
        linkedin_url||null, follow_up_at||null, node_id||null, node_key||null, lost_reason||null,
        tags||'', assigned_to||null,
-       stageChanged, parseInt(req.params.id), uid(req)]
+       stageChanged, dealId, uid(req)]
     )
-    if (!r.rows[0]) return res.status(404).json({ error: 'Deal not found' })
+
+    // Sync entity_links when node linkage changes
+    if (oldNodeId && oldNodeId !== node_id) {
+      await query(
+        `UPDATE entity_links SET deleted_at = NOW(), updated_at = NOW()
+         WHERE source_type = 'node' AND source_id = $1 AND target_type = 'crm_deal' AND target_id = $2 AND deleted_at IS NULL`,
+        [oldNodeId, String(dealId)]
+      )
+    }
+    if (node_id && node_id !== oldNodeId) {
+      await query(
+        `INSERT INTO entity_links (source_type, source_id, source_key, target_type, target_id, relation, user_id, project_id)
+         VALUES ('node', $1, $2, 'crm_deal', $3, 'linked_to', $4, $5)
+         ON CONFLICT (source_type, source_id, target_type, target_id, relation) WHERE deleted_at IS NULL DO NOTHING`,
+        [node_id, node_key || null, String(dealId), uid(req), project_id || null]
+      )
+    }
+
     res.json(r.rows[0])
   } catch (e) { next(e) }
 })
@@ -103,7 +134,13 @@ router.patch('/deals/:id/followup', async (req, res, next) => {
 
 router.delete('/deals/:id', async (req, res, next) => {
   try {
-    await query('DELETE FROM crm_deals WHERE id=$1 AND user_id=$2', [parseInt(req.params.id), uid(req)])
+    const dealId = parseInt(req.params.id)
+    await query(
+      `UPDATE entity_links SET deleted_at = NOW(), updated_at = NOW()
+       WHERE target_type = 'crm_deal' AND target_id = $1 AND deleted_at IS NULL`,
+      [String(dealId)]
+    )
+    await query('DELETE FROM crm_deals WHERE id=$1 AND user_id=$2', [dealId, uid(req)])
     res.json({ ok: true })
   } catch (e) { next(e) }
 })

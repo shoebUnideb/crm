@@ -11,6 +11,7 @@ import invitesRouter from './src/routes/invites.js'
 import analyticsRouter from './src/routes/analytics.js'
 import adminRouter from './src/routes/admin.js'
 import crmRouter from './src/routes/crm.js'
+import linksRouter from './src/routes/links.js'
 import errorHandler from './src/middleware/errorHandler.js'
 import { initDb } from './src/db/index.js'
 import { attachCollabServer } from './src/websocket/collabServer.js'
@@ -31,6 +32,7 @@ app.use('/api/invites', invitesRouter)
 app.use('/api/analytics', analyticsRouter)
 app.use('/api/admin', adminRouter)
 app.use('/api/crm', crmRouter)
+app.use('/api/links', linksRouter)
 
 app.use(errorHandler)
 

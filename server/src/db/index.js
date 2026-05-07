@@ -210,4 +210,35 @@ export async function initDb() {
       created_at TIMESTAMPTZ DEFAULT NOW()
     )
   `)
+
+  // ── Entity Links (Relationship Layer) ───────────────────────────────────────
+  await p.query(`
+    CREATE TABLE IF NOT EXISTS entity_links (
+      id SERIAL PRIMARY KEY,
+      source_type VARCHAR(50) NOT NULL,
+      source_id TEXT NOT NULL,
+      source_key VARCHAR(50),
+      target_type VARCHAR(50) NOT NULL,
+      target_id TEXT NOT NULL,
+      relation VARCHAR(50) NOT NULL DEFAULT 'linked_to',
+      user_id INTEGER NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+      project_id VARCHAR(36),
+      metadata JSONB DEFAULT '{}',
+      deleted_at TIMESTAMPTZ DEFAULT NULL,
+      created_at TIMESTAMPTZ DEFAULT NOW(),
+      updated_at TIMESTAMPTZ DEFAULT NOW()
+    )
+  `)
+  await p.query(`CREATE INDEX IF NOT EXISTS idx_entity_links_source ON entity_links(source_type, source_id) WHERE deleted_at IS NULL`)
+  await p.query(`CREATE INDEX IF NOT EXISTS idx_entity_links_target ON entity_links(target_type, target_id) WHERE deleted_at IS NULL`)
+  await p.query(`CREATE INDEX IF NOT EXISTS idx_entity_links_project ON entity_links(project_id) WHERE deleted_at IS NULL`)
+  await p.query(`CREATE UNIQUE INDEX IF NOT EXISTS idx_entity_links_unique_active ON entity_links(source_type, source_id, target_type, target_id, relation) WHERE deleted_at IS NULL`)
+
+  // Backfill entity_links from existing crm_deals that have node_id
+  await p.query(`
+    INSERT INTO entity_links (source_type, source_id, source_key, target_type, target_id, relation, user_id)
+    SELECT 'node', node_id, node_key, 'crm_deal', id::text, 'linked_to', user_id
+    FROM crm_deals WHERE node_id IS NOT NULL AND node_id != ''
+    ON CONFLICT DO NOTHING
+  `)
 }

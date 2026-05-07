@@ -81,6 +81,7 @@ export default function GraphRenderer({
   depsOnlyView = false,
   curved = false,
   nodeSizeOverrides = null,
+  linkMap = {},
   onSelectNode,
   onDeselect,
   onStopEditing,
@@ -193,6 +194,7 @@ export default function GraphRenderer({
             dimmed={filteredNodeIds != null && !filteredNodeIds.has(id)}
             compactMode={compactMode}
             sizeScale={nodeSizeOverrides?.[id] ?? 1}
+            crmLinked={!!linkMap[id]?.length}
             onSelect={() => onSelectNode(id)}
             onDelete={() => {
               if (node.childIds.length > 0) {

@@ -1,5 +1,6 @@
 import React, { useState, useEffect, useRef } from 'react'
 import { useNavigate } from 'react-router-dom'
+import InlineCRMModal from './InlineCRMModal.jsx'
 
 const STATUS_OPTIONS = [
   { value: '', label: 'No status' },
@@ -52,6 +53,7 @@ export default function NodePropertiesPanel({ node, onSave, onAddComment, onDele
   // Feature 25: reply state
   const [replyingTo, setReplyingTo] = useState(null) // commentId
   const [replyText, setReplyText] = useState('')
+  const [showCRMModal, setShowCRMModal] = useState(false)
 
   useEffect(() => {
     setForm(buildForm(node))
@@ -165,7 +167,7 @@ export default function NodePropertiesPanel({ node, onSave, onAddComment, onDele
             </button>
           )}
           <button
-            onClick={() => navigate('/crm', { state: { newDeal: { node_id: node.id, company_name: node.title || '' } } })}
+            onClick={() => setShowCRMModal(true)}
             title="Track this node as a CRM deal"
             style={{
               background: '#F0FDF4', border: '1px solid #86EFAC',
@@ -649,6 +651,15 @@ export default function NodePropertiesPanel({ node, onSave, onAddComment, onDele
           </div>
         )}
       </div>
+
+      {showCRMModal && (
+        <InlineCRMModal
+          nodeId={node.id}
+          nodeKey={node.nodeKey || ''}
+          companyName={node.title || ''}
+          onClose={() => setShowCRMModal(false)}
+        />
+      )}
     </div>
   )
 }

@@ -27,7 +27,7 @@ function getInitials(str) {
 
 export default function TreeNode({
   node, isSelected, isEditing, isRoot, isHovered, isDragging, isEdgeTarget, isDropTarget, isMultiSelected,
-  rollupPct, colorOverride, dimmed, compactMode, sizeScale = 1,
+  rollupPct, colorOverride, dimmed, compactMode, sizeScale = 1, crmLinked,
   onSelect, onDelete, onEdit, onStopEditing, onToggleCollapse, onAdd,
   onNodeMouseDown, onPortMouseDown,
   onMouseEnter, onMouseLeave, onDoubleClick, onContextMenu,
@@ -270,6 +270,14 @@ export default function TreeNode({
           <text x={22} y={7} textAnchor="middle" dominantBaseline="middle" fontSize="8.5" fill="#3B82F6" fontWeight="600">
             {node.jiraKey.length > 10 ? node.jiraKey.slice(0, 10) : node.jiraKey}
           </text>
+        </g>
+      )}
+
+      {/* CRM deal badge — below node, offset right of Jira key */}
+      {!compactMode && crmLinked && (
+        <g transform={`translate(${w / 2 + (node.jiraKey ? 26 : -12)}, ${h + (node.collapsed ? 22 : 4)})`} style={{ pointerEvents: 'none' }}>
+          <rect width={24} height={14} rx={7} fill="#F0FDF4" stroke="#86EFAC" strokeWidth={0.8} />
+          <text x={12} y={7} textAnchor="middle" dominantBaseline="middle" fontSize="8.5" fill="#15803D" fontWeight="700">$</text>
         </g>
       )}
 
