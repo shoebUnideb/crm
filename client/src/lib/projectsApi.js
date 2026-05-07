@@ -1,4 +1,4 @@
-const BASE = import.meta.env.VITE_API_URL || 'http://localhost:3001'
+const BASE = import.meta.env.VITE_API_URL ?? ''
 
 function authHeaders(token) {
   return { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` }
@@ -51,7 +51,9 @@ export const projectsApi = {
 }
 
 export const WS_URL = (() => {
-  const base = import.meta.env.VITE_API_URL || 'http://localhost:3001'
-  return base.replace(/^http/, 'ws') + '/ws'
+  const envUrl = import.meta.env.VITE_API_URL
+  if (envUrl) return envUrl.replace(/^http/, 'ws') + '/ws'
+  const proto = window.location.protocol === 'https:' ? 'wss:' : 'ws:'
+  return `${proto}//${window.location.host}/ws`
 })()
 

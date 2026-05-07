@@ -1,4 +1,4 @@
-const API = (import.meta.env.VITE_API_URL || 'http://localhost:3001') + '/api/links'
+const API = (import.meta.env.VITE_API_URL ?? '') + '/api/links'
 
 function getToken() {
   try { return localStorage.getItem('chart-to-jira-token') } catch { return null }
