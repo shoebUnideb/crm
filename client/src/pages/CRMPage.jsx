@@ -256,23 +256,28 @@ export default function CRMPage() {
   useEffect(() => {
     if (!canvasPicker) return
     setCpProjects([]); setCpProjId(''); setCpMapId(''); setCpError(''); setCpNewProjName('')
-    const token = (() => { try { return localStorage.getItem('chart-to-jira-token') } catch { return null } })()
-    fetch('/api/projects', { headers: { Authorization: `Bearer ${token}` } })
-      .then(r => r.json())
-      .then(rows => {
-        // Deduplicate by id (server may have duplicates from re-syncs)
-        const seen = new Set()
-        const unique = rows.filter(p => { if (seen.has(p.id)) return false; seen.add(p.id); return true })
-        // Only show projects that actually have map data
-        const valid = unique.filter(p => p.state?.maps && Object.keys(p.state.maps).length > 0)
-        setCpProjects(valid)
-        if (valid.length === 1) {
-          setCpProjId(valid[0].id)
-          const maps = Object.values(valid[0].state.maps)
-          if (maps.length === 1) setCpMapId(maps[0].id)
-        }
-      })
-      .catch(() => setCpError('Failed to load projects'))
+
+    const user = (() => { try { return JSON.parse(localStorage.getItem('chart-to-jira-user') || '{}') } catch { return {} } })()
+    const localData = (() => { try { return JSON.parse(localStorage.getItem(`chart-to-jira-projects-${user.id}`) || 'null') } catch { return null } })()
+
+    if (localData?.projects) {
+      const valid = Object.values(localData.projects).filter(p => {
+        if (!p.maps) return false
+        return Object.values(p.maps).some(m => m.nodes && Object.keys(m.nodes).length > 0)
+      }).map(p => ({
+        id: p.id,
+        name: p.name,
+        state: { maps: p.maps },
+      }))
+      setCpProjects(valid)
+      if (valid.length === 1) {
+        setCpProjId(valid[0].id)
+        const maps = Object.values(valid[0].state.maps)
+        if (maps.length === 1) setCpMapId(maps[0].id)
+      }
+    } else {
+      setCpError('No local projects found. Create a project on the canvas first.')
+    }
   }, [canvasPicker])
 
   // Open new-deal modal pre-filled when navigating from canvas "Track in CRM" button
@@ -338,11 +343,19 @@ export default function CRMPage() {
         if (!cr.ok) throw new Error('Failed to create project')
       }
 
-      // Fetch full project state (ensures we have latest even for new projects)
-      const res = await fetch(`/api/projects/${targetProjId}`, { headers: { Authorization: `Bearer ${token}` } })
-      if (!res.ok) throw new Error('Project not found')
-      const proj = await res.json()
-      const state = proj.state
+      // Fetch full project state — prefer localStorage (local-only projects) over server
+      const user2 = (() => { try { return JSON.parse(localStorage.getItem('chart-to-jira-user') || '{}') } catch { return {} } })()
+      const localData2 = (() => { try { return JSON.parse(localStorage.getItem(`chart-to-jira-projects-${user2.id}`) || 'null') } catch { return null } })()
+      const localProj = localData2?.projects?.[targetProjId]
+      let state
+      if (localProj) {
+        state = { activeMapId: localProj.activeMapId, mapOrder: localProj.mapOrder, maps: localProj.maps, nodePrefix: localProj.nodePrefix, nodeCounter: localProj.nodeCounter }
+      } else {
+        const res = await fetch(`/api/projects/${targetProjId}`, { headers: { Authorization: `Bearer ${token}` } })
+        if (!res.ok) throw new Error('Project not found')
+        const proj = await res.json()
+        state = proj.state
+      }
       const map = state.maps?.[targetMapId]
       if (!map) throw new Error('Map not found in project')
 
@@ -371,13 +384,38 @@ export default function CRMPage() {
       }
       const updatedState = { ...state, maps: { ...state.maps, [targetMapId]: updatedMap }, nodeCounter: projCounter }
 
-      // Save updated project state
-      const sr = await fetch(`/api/projects/${targetProjId}/state`, {
-        method: 'PUT',
-        headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
-        body: JSON.stringify({ state: updatedState }),
-      })
-      if (!sr.ok) throw new Error('Failed to save canvas node')
+      // Save updated state: write to localStorage first (for local projects), then sync to server
+      if (localProj && localData2 && user2.id) {
+        const updatedLocalProj = {
+          ...localProj,
+          maps: updatedState.maps,
+          nodeCounter: updatedState.nodeCounter,
+          nodePrefix: updatedState.nodePrefix,
+        }
+        const newLocalData = { ...localData2, projects: { ...localData2.projects, [targetProjId]: updatedLocalProj } }
+        try { localStorage.setItem(`chart-to-jira-projects-${user2.id}`, JSON.stringify(newLocalData)) } catch (_) {}
+        // Best-effort server sync (creates project on server if it doesn't exist yet)
+        fetch('/api/projects', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
+          body: JSON.stringify({ id: targetProjId, name: localProj.name, state: updatedState }),
+        }).then(r => {
+          if (r.ok || r.status === 409) {
+            fetch(`/api/projects/${targetProjId}/state`, {
+              method: 'PUT',
+              headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
+              body: JSON.stringify({ state: updatedState }),
+            }).catch(() => {})
+          }
+        }).catch(() => {})
+      } else {
+        const sr = await fetch(`/api/projects/${targetProjId}/state`, {
+          method: 'PUT',
+          headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
+          body: JSON.stringify({ state: updatedState }),
+        })
+        if (!sr.ok) throw new Error('Failed to save canvas node')
+      }
 
       // Link the node_id and node_key on the deal
       const updated = await crmApi.updateDeal(deal.id, {

@@ -2,7 +2,7 @@ import { Router } from 'express'
 import authenticate from '../middleware/authenticate.js'
 import {
   createProject, getProjectsForUser, getProject,
-  updateProjectName, deleteProject, getMembers,
+  updateProjectName, deleteProject, leaveProject, getMembers,
   inviteMember, removeMember, updateMemberRole, getMemberRole,
   updateProjectState, createInvite, getPendingInvites, revokeInvite,
 } from '../services/projectsService.js'
@@ -69,11 +69,19 @@ router.put('/:projectId/state', async (req, res, next) => {
   } catch (e) { next(e) }
 })
 
-// Delete project
+// Delete project (last admin = hard delete, otherwise = self-removal)
 router.delete('/:projectId', async (req, res, next) => {
   try {
-    await deleteProject(req.params.projectId, req.user.id)
-    res.json({ ok: true })
+    const result = await deleteProject(req.params.projectId, req.user.id)
+    res.json(result)
+  } catch (e) { next(e) }
+})
+
+// Leave project (any member can leave; last admin blocked if others remain)
+router.post('/:projectId/leave', async (req, res, next) => {
+  try {
+    const result = await leaveProject(req.params.projectId, req.user.id)
+    res.json(result)
   } catch (e) { next(e) }
 })
 
@@ -83,7 +91,7 @@ router.get('/:projectId/members', async (req, res, next) => {
     const member = await getMemberRole(req.params.projectId, req.user.id)
     if (!member) return res.status(403).json({ error: 'Access denied' })
     const members = await getMembers(req.params.projectId)
-    res.json(members.map(m => ({ userId: m.user_id, email: m.email, role: m.role, joinedAt: m.joined_at })))
+    res.json(members.map(m => ({ userId: m.user_id, email: m.email, role: m.role, scope: m.scope || 'project', joinedAt: m.joined_at })))
   } catch (e) { next(e) }
 })
 
@@ -101,10 +109,15 @@ router.post('/:projectId/members', async (req, res, next) => {
   } catch (e) { next(e) }
 })
 
-// Remove member
+// Remove member (admin can kick anyone except the last admin)
 router.delete('/:projectId/members/:userId', async (req, res, next) => {
   try {
-    await removeMember(req.params.projectId, parseInt(req.params.userId), req.user.id)
+    const result = await removeMember(req.params.projectId, parseInt(req.params.userId), req.user.id)
+    notifyUser(result.kickedUserId, {
+      type: 'kicked',
+      projectId: req.params.projectId,
+      kickedBy: req.user.email,
+    })
     res.json({ ok: true })
   } catch (e) { next(e) }
 })
@@ -124,12 +137,13 @@ router.post('/:projectId/invites', async (req, res, next) => {
   try {
     const requester = await getMemberRole(req.params.projectId, req.user.id)
     if (!requester || requester.role !== 'admin') return res.status(403).json({ error: 'Only admins can invite members' })
-    const { email, role } = req.body
+    const { email, role, scope } = req.body
     if (!email || !['admin', 'edit', 'view'].includes(role)) {
       return res.status(400).json({ error: 'email and valid role required' })
     }
+    const inviteScope = scope || 'project'
     const project = await getProject(req.params.projectId, req.user.id)
-    const token = await createInvite(req.params.projectId, email, role, req.user.id)
+    const token = await createInvite(req.params.projectId, email, role, req.user.id, inviteScope)
     sendInviteEmail(email, req.user.email, project.name, role, token).catch(() => {})
 
     // Push real-time notification if invitee is online
@@ -156,7 +170,7 @@ router.post('/:projectId/invites', async (req, res, next) => {
 router.get('/:projectId/invites', async (req, res, next) => {
   try {
     const invites = await getPendingInvites(req.params.projectId, req.user.id)
-    res.json(invites.map(i => ({ id: i.id, email: i.email, role: i.role, createdAt: i.created_at, expiresAt: i.expires_at })))
+    res.json(invites.map(i => ({ id: i.id, email: i.email, role: i.role, scope: i.scope || 'project', createdAt: i.created_at, expiresAt: i.expires_at })))
   } catch (e) { next(e) }
 })
 

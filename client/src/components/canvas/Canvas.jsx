@@ -33,6 +33,10 @@ import { useToast, ToastContainer } from './Toast.jsx'
 import { exportCSV, generateConfluenceMarkup, encodeShareLink, importCSV, exportMarkdown, parseTextAsTree } from '../../lib/exportUtils.js'
 import CustomFieldsManager from './CustomFieldsManager.jsx'
 import { useNodeLinks } from '../../hooks/useNodeLinks.js'
+import { useGraphOverlay } from '../../hooks/useGraphOverlay.js'
+import OverlayRenderer from './OverlayRenderer.jsx'
+import GraphLensBar from './GraphLensBar.jsx'
+import ImpactPanel from './ImpactPanel.jsx'
 
 const PAL_W = 340
 const PAL_H = 144
@@ -154,6 +158,14 @@ export default function Canvas({
   } = usePanZoom()
 
   const { linkMap } = useNodeLinks(projectId)
+
+  const [activeLens, setActiveLens] = useState(null)
+  const [impactNodeId, setImpactNodeId] = useState(null)
+  const { overlay, loading: overlayLoading } = useGraphOverlay(projectId, activeLens, !!activeLens)
+
+  const handleLensToggle = useCallback((lensId) => {
+    setActiveLens(prev => prev === lensId ? null : lensId)
+  }, [])
 
   const { nodes, rootId, selectedNodeId, extraEdges: _extraEdges, groups = [] } = treeState
 
@@ -636,6 +648,8 @@ export default function Canvas({
       // Escape
       if (e.key === 'Escape') {
         if (openMenu) { setOpenMenu(null); return }
+        if (activeLens) { setActiveLens(null); return }
+        if (impactNodeId) { setImpactNodeId(null); return }
         setContextMenu(null)
         setSelectedEdgeId(null)
         setShowNotes(false)
@@ -1628,6 +1642,9 @@ export default function Canvas({
             onEdgeClick={handleEdgeClick}
             onNodeContextMenu={handleNodeContextMenu}
           />
+          {activeLens && overlay && (
+            <OverlayRenderer overlay={overlay} nodes={nodes} />
+          )}
         </g>
 
         {/* Color + Shape palette */}
@@ -2226,6 +2243,8 @@ export default function Canvas({
           onStopTimer={stopTimer}
           timerActive={activeTimer?.nodeId === contextMenu?.nodeId}
           onOpenDetail={() => { setNodeDetailId(contextMenu.nodeId); setContextMenu(null) }}
+          onShowImpact={(nodeId) => { setImpactNodeId(nodeId); setContextMenu(null) }}
+          onShowDependencies={(nodeId) => { setActiveLens('dependencies'); setContextMenu(null) }}
           onClose={() => setContextMenu(null)}
         />
       )}
@@ -2534,6 +2553,30 @@ export default function Canvas({
           <span style={{ opacity:0.6, fontSize:11 }}>{nodes[activeTimer.nodeId]?.title?.slice(0, 20)}</span>
           <button onClick={stopTimer} style={{ background:'#EF4444', color:'white', border:'none', borderRadius:6, padding:'2px 8px', cursor:'pointer', fontSize:11, fontWeight:700 }}>Stop</button>
         </div>
+      )}
+
+      {/* Graph Lens Bar — overlay toggle controls */}
+      {!presentationMode && (
+        <GraphLensBar
+          activeLens={activeLens}
+          onToggle={handleLensToggle}
+          loading={overlayLoading}
+        />
+      )}
+
+      {/* Impact Analysis Panel */}
+      {impactNodeId && (
+        <ImpactPanel
+          nodeId={impactNodeId}
+          nodeTitle={nodes[impactNodeId]?.text}
+          projectId={projectId}
+          onClose={() => setImpactNodeId(null)}
+          onHighlight={(result) => {
+            if (result?.affectedNodeIds?.length) {
+              setMultiSelectIds(new Set(result.affectedNodeIds))
+            }
+          }}
+        />
       )}
 
       {/* Toast notifications */}

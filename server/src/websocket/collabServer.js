@@ -1,6 +1,7 @@
 import { WebSocketServer } from 'ws'
 import { verifyToken } from '../services/authService.js'
 import { getMemberRole, getProject, updateProjectState } from '../services/projectsService.js'
+import { syncEdgeToEntityLinks } from '../services/graphSync.js'
 
 // rooms: Map<projectId, Map<userId, { ws, email, userId, role, cursor }>>
 const rooms = new Map()
@@ -180,6 +181,16 @@ export function attachCollabServer(server) {
               userId: currentUser.id,
               email: currentUser.email,
             }, currentUser.id)
+
+            // Sync edge mutations to entity_links for graph traversal
+            if (['ADD_EDGE', 'DELETE_EDGE', 'SET_EDGE_TYPE'].includes(msg.action?.type)) {
+              syncEdgeToEntityLinks(msg.action, currentUser.id, currentProjectId).catch(() => {})
+              broadcast(currentProjectId, {
+                type: 'overlay_invalidated',
+                projectId: currentProjectId,
+                overlayTypes: ['dependencies', 'crm_links', 'risk', 'critical_path'],
+              })
+            }
 
             if (msg.state) {
               try {

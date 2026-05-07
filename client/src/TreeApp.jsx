@@ -17,6 +17,7 @@ import { useNotifications } from './hooks/useNotifications.js'
 import { useAuth } from './context/AuthContext.jsx'
 import { getAuthToken } from './lib/localStorage.js'
 import { trackEvent } from './lib/analyticsApi.js'
+import { eventBus, EVENTS } from './lib/eventBus.js'
 
 export default function TreeApp() {
   const { user, logout, isGuest } = useAuth()
@@ -71,6 +72,15 @@ export default function TreeApp() {
   const location = useLocation()
 
   useEffect(() => {
+    return eventBus.on(EVENTS.KICKED_FROM_PROJECT, (msg) => {
+      if (msg.projectId === activeId) {
+        alert(`You were removed from this project by ${msg.kickedBy || 'an admin'}.`)
+        deleteProject(activeId)
+      }
+    })
+  }, [activeId])
+
+  useEffect(() => {
     const { focusNodeId, projectId, mapId } = location.state || {}
     if (!focusNodeId) return
     window.history.replaceState({}, '')
@@ -104,6 +114,7 @@ export default function TreeApp() {
   }, [location.state])
   const notifications = useNotifications(!isGuest ? getAuthToken() : null)
   const [openPanel, setOpenPanel] = useState(null) // 'projects' | 'jira' | 'dashboard' | 'members' | null
+  const [pendingRenameProjectId, setPendingRenameProjectId] = useState(null)
   const [saveStatus, setSaveStatus] = useState(null) // null | 'saving' | 'saved'
   const [sharingId, setSharingId] = useState(null) // project currently being shared
   const [showAppTemplates, setShowAppTemplates] = useState(false)
@@ -526,6 +537,8 @@ export default function TreeApp() {
             onCreateBlank={() => {
               const id = createProject('New Project')
               switchProject(id)
+              setOpenPanel('projects')
+              setPendingRenameProjectId(id)
             }}
             onOpenTemplates={() => setShowAppTemplates(true)}
           />
@@ -547,7 +560,11 @@ export default function TreeApp() {
               activeId={activeId}
               activeMapId={activeProject?.activeMapId}
               onSwitch={switchProject}
-              onCreate={createProject}
+              onCreate={(name) => {
+                const id = createProject(name || 'New Project')
+                setPendingRenameProjectId(id)
+                return id
+              }}
               onRename={renameProject}
               onDelete={deleteProject}
               onClose={() => setOpenPanel(null)}
@@ -562,6 +579,8 @@ export default function TreeApp() {
               onDeleteMap={deleteMindMap}
               onRenameMap={renameMindMap}
               onSwitchMap={(projectId, mapId) => { switchProject(projectId); switchMindMap(projectId, mapId) }}
+              pendingRenameId={pendingRenameProjectId}
+              onPendingRenameConsumed={() => setPendingRenameProjectId(null)}
               onExport={(projectId) => {
                 const project = projects.find(p => p.id === projectId)
                 if (!project) return
@@ -611,11 +630,18 @@ export default function TreeApp() {
           <MembersPanel
             projectId={activeRoomId || activeId}
             myRole={collab.myRole || activeCollab.role}
+            myUserId={user?.id}
             token={getAuthToken()}
             onClose={() => setOpenPanel(null)}
+            onLeave={() => {
+              setOpenPanel(null)
+              deleteProject(activeId)
+            }}
             mapCount={activeProject?.collab
               ? Object.keys(activeProject.maps || {}).length
               : activeMap?.collab ? 1 : 0}
+            activeMapId={activeProject?.activeMapId}
+            activeMapName={activeMap?.name}
           />
         )}
       </div>

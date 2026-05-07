@@ -23,6 +23,7 @@ export const projectsApi = {
   get: (token, projectId) => req('GET', `/api/projects/${projectId}`, null, token),
   rename: (token, projectId, name) => req('PATCH', `/api/projects/${projectId}/name`, { name }, token),
   delete: (token, projectId) => req('DELETE', `/api/projects/${projectId}`, null, token),
+  leave: (token, projectId) => req('POST', `/api/projects/${projectId}/leave`, null, token),
   saveState: (token, projectId, state) => req('PUT', `/api/projects/${projectId}/state`, { state }, token),
 
   getMembers: (token, projectId) => req('GET', `/api/projects/${projectId}/members`, null, token),
@@ -33,8 +34,8 @@ export const projectsApi = {
   updateRole: (token, projectId, userId, role) =>
     req('PATCH', `/api/projects/${projectId}/members/${userId}/role`, { role }, token),
 
-  sendInvite: (token, projectId, email, role) =>
-    req('POST', `/api/projects/${projectId}/invites`, { email, role }, token),
+  sendInvite: (token, projectId, email, role, scope) =>
+    req('POST', `/api/projects/${projectId}/invites`, { email, role, scope }, token),
   getPendingInvites: (token, projectId) =>
     req('GET', `/api/projects/${projectId}/invites`, null, token),
   revokeInvite: (token, projectId, inviteId) =>
