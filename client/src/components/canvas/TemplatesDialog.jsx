@@ -25,6 +25,9 @@ const CATS = {
   startup:     { label: 'Startup',     color: '#BF2600', bg: '#FFEBE6' },
   personal:    { label: 'Personal',    color: '#5243AA', bg: '#EAE6FF' },
   marketing:   { label: 'Marketing',   color: '#006644', bg: '#E3FCEF' },
+  operations:  { label: 'Operations',  color: '#403294', bg: '#EAE6FF' },
+  crm:         { label: 'CRM & Sales', color: '#0747A6', bg: '#DEEBFF' },
+  social:      { label: 'Social Media', color: '#006644', bg: '#E3FCEF' },
 }
 
 // ─── template list ────────────────────────────────────────────────────────────
@@ -1408,6 +1411,556 @@ export const TEMPLATES = [
       infra.childIds  = ['in1', 'in2', 'in3']
       fund.childIds   = ['fu1', 'fu2', 'fu3']
       return { nodes: { root, runway, revenue, burn, head, infra, fund, rw1, rw2, rw3, rw4, re1, re2, re3, re4, b1, b2, b3, hc1, hc2, hc3, hc4, in1, in2, in3, fu1, fu2, fu3 }, rootId: 'root' }
+    },
+  },
+
+  // ── OPERATIONS ──────────────────────────────────────────────────────────────
+  {
+    id: 'sop-builder', category: 'operations', popular: true,
+    name: 'SOP Builder',
+    description: 'Standard Operating Procedure with process steps, owners, and exceptions',
+    icon: '📋',
+    build: () => {
+      const root = node('root', 'SOP: [Process Name]', null, 0)
+      const purpose = node('purpose', 'Purpose & Scope', 'root', 1, { color: 'blue' })
+      const steps = node('steps', 'Process Steps', 'root', 1, { color: 'green' })
+      const exceptions = node('exceptions', 'Exceptions & Edge Cases', 'root', 1, { color: 'yellow' })
+      const tools = node('tools', 'Tools & Resources', 'root', 1, { color: 'purple' })
+      const review = node('review', 'Review & Updates', 'root', 1, { color: 'red' })
+      const p1 = node('p1', 'Objective statement', 'purpose', 2, { issueType: 'task', status: 'done' })
+      const p2 = node('p2', 'Who this applies to', 'purpose', 2, { issueType: 'task', status: 'done' })
+      const p3 = node('p3', 'Prerequisites', 'purpose', 2, { issueType: 'task', status: 'todo' })
+      const st1 = node('st1', 'Step 1: Initiate request', 'steps', 2, { issueType: 'task', status: 'todo' })
+      const st2 = node('st2', 'Step 2: Validate inputs', 'steps', 2, { issueType: 'task', status: 'todo' })
+      const st3 = node('st3', 'Step 3: Execute process', 'steps', 2, { issueType: 'task', status: 'todo' })
+      const st4 = node('st4', 'Step 4: Quality check', 'steps', 2, { issueType: 'task', status: 'todo' })
+      const st5 = node('st5', 'Step 5: Deliver output', 'steps', 2, { issueType: 'task', status: 'todo' })
+      const e1 = node('e1', 'Missing data handling', 'exceptions', 2, { issueType: 'task', priority: 'high' })
+      const e2 = node('e2', 'Escalation path', 'exceptions', 2, { issueType: 'task', priority: 'critical' })
+      const e3 = node('e3', 'Rollback procedure', 'exceptions', 2, { issueType: 'task', priority: 'high' })
+      const to1 = node('to1', 'Primary tool / system', 'tools', 2, { issueType: 'task' })
+      const to2 = node('to2', 'Documentation link', 'tools', 2, { issueType: 'task' })
+      const to3 = node('to3', 'Access requirements', 'tools', 2, { issueType: 'task' })
+      const r1 = node('r1', 'Review frequency', 'review', 2, { issueType: 'task' })
+      const r2 = node('r2', 'Last reviewed date', 'review', 2, { issueType: 'task' })
+      const r3 = node('r3', 'Change log', 'review', 2, { issueType: 'task' })
+      root.childIds = ['purpose', 'steps', 'exceptions', 'tools', 'review']
+      purpose.childIds = ['p1', 'p2', 'p3']
+      steps.childIds = ['st1', 'st2', 'st3', 'st4', 'st5']
+      exceptions.childIds = ['e1', 'e2', 'e3']
+      tools.childIds = ['to1', 'to2', 'to3']
+      review.childIds = ['r1', 'r2', 'r3']
+      return { nodes: { root, purpose, steps, exceptions, tools, review, p1, p2, p3, st1, st2, st3, st4, st5, e1, e2, e3, to1, to2, to3, r1, r2, r3 }, rootId: 'root' }
+    },
+  },
+  {
+    id: 'vendor-management', category: 'operations',
+    name: 'Vendor Management',
+    description: 'Track vendors, contracts, SLAs, renewal dates, and risk',
+    icon: '🤝',
+    build: () => {
+      const root = node('root', 'Vendor Management', null, 0)
+      const active = node('active', 'Active Vendors', 'root', 1, { color: 'green' })
+      const eval_ = node('eval', 'Under Evaluation', 'root', 1, { color: 'yellow' })
+      const retired = node('retired', 'Retired / Replaced', 'root', 1, { color: 'red' })
+      const process = node('process', 'Procurement Process', 'root', 1, { color: 'blue' })
+      const a1 = node('a1', 'Cloud hosting provider', 'active', 2, { issueType: 'task', status: 'done', priority: 'critical' })
+      const a2 = node('a2', 'Payment processor', 'active', 2, { issueType: 'task', status: 'done', priority: 'high' })
+      const a3 = node('a3', 'Email service', 'active', 2, { issueType: 'task', status: 'done', priority: 'medium' })
+      const a4 = node('a4', 'Analytics platform', 'active', 2, { issueType: 'task', status: 'done', priority: 'low' })
+      const ev1 = node('ev1', 'Candidate A — CRM tool', 'eval', 2, { issueType: 'task', status: 'in-progress' })
+      const ev2 = node('ev2', 'Candidate B — Support tool', 'eval', 2, { issueType: 'task', status: 'todo' })
+      const rt1 = node('rt1', 'Old hosting (migrated)', 'retired', 2, { issueType: 'task', status: 'done' })
+      const pr1 = node('pr1', 'Identify need', 'process', 2, { issueType: 'task' })
+      const pr2 = node('pr2', 'RFP / shortlist', 'process', 2, { issueType: 'task' })
+      const pr3 = node('pr3', 'Trial & evaluation', 'process', 2, { issueType: 'task' })
+      const pr4 = node('pr4', 'Contract negotiation', 'process', 2, { issueType: 'task' })
+      const pr5 = node('pr5', 'Onboard & integrate', 'process', 2, { issueType: 'task' })
+      root.childIds = ['active', 'eval', 'retired', 'process']
+      active.childIds = ['a1', 'a2', 'a3', 'a4']
+      eval_.childIds = ['ev1', 'ev2']
+      retired.childIds = ['rt1']
+      process.childIds = ['pr1', 'pr2', 'pr3', 'pr4', 'pr5']
+      return { nodes: { root, active, eval: eval_, retired, process, a1, a2, a3, a4, ev1, ev2, rt1, pr1, pr2, pr3, pr4, pr5 }, rootId: 'root' }
+    },
+  },
+  {
+    id: 'capacity-planning', category: 'operations',
+    name: 'Capacity Planning',
+    description: 'Teams, workload, utilization, and bottleneck tracking',
+    icon: '📊',
+    build: () => {
+      const root = node('root', 'Capacity Planning — Q[X]', null, 0)
+      const team1 = node('team1', 'Engineering Team', 'root', 1, { color: 'blue' })
+      const team2 = node('team2', 'Design Team', 'root', 1, { color: 'purple' })
+      const team3 = node('team3', 'Operations Team', 'root', 1, { color: 'green' })
+      const risks = node('risks', 'Bottlenecks & Risks', 'root', 1, { color: 'red' })
+      const t1a = node('t1a', 'Headcount: 8 engineers', 'team1', 2, { issueType: 'task' })
+      const t1b = node('t1b', 'Utilization: 85%', 'team1', 2, { issueType: 'task', status: 'in-progress' })
+      const t1c = node('t1c', 'Committed projects: 3', 'team1', 2, { issueType: 'task' })
+      const t1d = node('t1d', 'Available bandwidth: 1.2 FTE', 'team1', 2, { issueType: 'task' })
+      const t2a = node('t2a', 'Headcount: 3 designers', 'team2', 2, { issueType: 'task' })
+      const t2b = node('t2b', 'Utilization: 95%', 'team2', 2, { issueType: 'task', status: 'blocked', priority: 'high' })
+      const t2c = node('t2c', 'Committed projects: 4', 'team2', 2, { issueType: 'task' })
+      const t3a = node('t3a', 'Headcount: 2 ops', 'team3', 2, { issueType: 'task' })
+      const t3b = node('t3b', 'Utilization: 60%', 'team3', 2, { issueType: 'task', status: 'done' })
+      const t3c = node('t3c', 'Available bandwidth: 0.8 FTE', 'team3', 2, { issueType: 'task' })
+      const r1 = node('r1', 'Design is over-capacity', 'risks', 2, { issueType: 'bug', priority: 'critical', status: 'in-progress' })
+      const r2 = node('r2', 'Hiring pipeline too slow', 'risks', 2, { issueType: 'bug', priority: 'high', status: 'todo' })
+      const r3 = node('r3', 'Key-person dependency', 'risks', 2, { issueType: 'bug', priority: 'high', status: 'todo' })
+      root.childIds = ['team1', 'team2', 'team3', 'risks']
+      team1.childIds = ['t1a', 't1b', 't1c', 't1d']
+      team2.childIds = ['t2a', 't2b', 't2c']
+      team3.childIds = ['t3a', 't3b', 't3c']
+      risks.childIds = ['r1', 'r2', 'r3']
+      return { nodes: { root, team1, team2, team3, risks, t1a, t1b, t1c, t1d, t2a, t2b, t2c, t3a, t3b, t3c, r1, r2, r3 }, rootId: 'root' }
+    },
+  },
+  {
+    id: 'postmortem', category: 'operations',
+    name: 'Incident Postmortem',
+    description: 'Timeline, root cause, impact analysis, and action items',
+    icon: '🔍',
+    build: () => {
+      const root = node('root', 'Postmortem: [Incident Title]', null, 0)
+      const summary = node('summary', 'Summary', 'root', 1, { color: 'blue' })
+      const timeline = node('timeline', 'Timeline', 'root', 1, { color: 'yellow' })
+      const cause = node('cause', 'Root Cause', 'root', 1, { color: 'red' })
+      const impact = node('impact', 'Impact', 'root', 1, { color: 'purple' })
+      const actions = node('actions', 'Action Items', 'root', 1, { color: 'green' })
+      const s1 = node('s1', 'What happened (1 sentence)', 'summary', 2, { issueType: 'task' })
+      const s2 = node('s2', 'Duration of outage', 'summary', 2, { issueType: 'task' })
+      const s3 = node('s3', 'Severity level', 'summary', 2, { issueType: 'task', priority: 'critical' })
+      const tl1 = node('tl1', 'Detection time', 'timeline', 2, { issueType: 'task' })
+      const tl2 = node('tl2', 'First response', 'timeline', 2, { issueType: 'task' })
+      const tl3 = node('tl3', 'Mitigation applied', 'timeline', 2, { issueType: 'task' })
+      const tl4 = node('tl4', 'Full resolution', 'timeline', 2, { issueType: 'task' })
+      const c1 = node('c1', 'Primary cause', 'cause', 2, { issueType: 'task', priority: 'critical' })
+      const c2 = node('c2', 'Contributing factors', 'cause', 2, { issueType: 'task', priority: 'high' })
+      const c3 = node('c3', 'Why it wasn\'t caught earlier', 'cause', 2, { issueType: 'task' })
+      const i1 = node('i1', 'Users affected', 'impact', 2, { issueType: 'task' })
+      const i2 = node('i2', 'Revenue impact', 'impact', 2, { issueType: 'task' })
+      const i3 = node('i3', 'SLA breach', 'impact', 2, { issueType: 'task', priority: 'high' })
+      const a1 = node('a1', 'Add monitoring alert', 'actions', 2, { issueType: 'task', status: 'todo', priority: 'critical' })
+      const a2 = node('a2', 'Fix underlying bug', 'actions', 2, { issueType: 'bug', status: 'todo', priority: 'critical' })
+      const a3 = node('a3', 'Update runbook', 'actions', 2, { issueType: 'task', status: 'todo', priority: 'high' })
+      const a4 = node('a4', 'Load test before next release', 'actions', 2, { issueType: 'task', status: 'todo', priority: 'medium' })
+      root.childIds = ['summary', 'timeline', 'cause', 'impact', 'actions']
+      summary.childIds = ['s1', 's2', 's3']
+      timeline.childIds = ['tl1', 'tl2', 'tl3', 'tl4']
+      cause.childIds = ['c1', 'c2', 'c3']
+      impact.childIds = ['i1', 'i2', 'i3']
+      actions.childIds = ['a1', 'a2', 'a3', 'a4']
+      return { nodes: { root, summary, timeline, cause, impact, actions, s1, s2, s3, tl1, tl2, tl3, tl4, c1, c2, c3, i1, i2, i3, a1, a2, a3, a4 }, rootId: 'root' }
+    },
+  },
+  {
+    id: 'change-management', category: 'operations',
+    name: 'Change Management',
+    description: 'Change request through impact, approval, rollout, and review',
+    icon: '🔄',
+    build: () => {
+      const root = node('root', 'Change: [Description]', null, 0)
+      const request = node('request', 'Change Request', 'root', 1, { color: 'blue' })
+      const assess = node('assess', 'Impact Assessment', 'root', 1, { color: 'yellow' })
+      const approval = node('approval', 'Approval', 'root', 1, { color: 'purple' })
+      const rollout = node('rollout', 'Rollout Plan', 'root', 1, { color: 'green' })
+      const postchange = node('postchange', 'Post-Change Review', 'root', 1, { color: 'red' })
+      const rq1 = node('rq1', 'Requestor & rationale', 'request', 2, { issueType: 'task', status: 'done' })
+      const rq2 = node('rq2', 'Systems affected', 'request', 2, { issueType: 'task', status: 'done' })
+      const rq3 = node('rq3', 'Proposed timeline', 'request', 2, { issueType: 'task', status: 'done' })
+      const as1 = node('as1', 'Risk level (low/med/high)', 'assess', 2, { issueType: 'task', status: 'in-progress' })
+      const as2 = node('as2', 'Dependencies identified', 'assess', 2, { issueType: 'task', status: 'todo' })
+      const as3 = node('as3', 'Rollback plan', 'assess', 2, { issueType: 'task', status: 'todo', priority: 'high' })
+      const ap1 = node('ap1', 'Technical lead sign-off', 'approval', 2, { issueType: 'task', status: 'todo' })
+      const ap2 = node('ap2', 'Stakeholder sign-off', 'approval', 2, { issueType: 'task', status: 'todo' })
+      const ap3 = node('ap3', 'Change window agreed', 'approval', 2, { issueType: 'task', status: 'todo' })
+      const ro1 = node('ro1', 'Pre-change backups', 'rollout', 2, { issueType: 'task', status: 'todo' })
+      const ro2 = node('ro2', 'Execute change steps', 'rollout', 2, { issueType: 'task', status: 'todo' })
+      const ro3 = node('ro3', 'Smoke test & validate', 'rollout', 2, { issueType: 'task', status: 'todo' })
+      const ro4 = node('ro4', 'Communicate to users', 'rollout', 2, { issueType: 'task', status: 'todo' })
+      const pc1 = node('pc1', 'Verify success metrics', 'postchange', 2, { issueType: 'task', status: 'todo' })
+      const pc2 = node('pc2', 'Document lessons learned', 'postchange', 2, { issueType: 'task', status: 'todo' })
+      const pc3 = node('pc3', 'Close change ticket', 'postchange', 2, { issueType: 'task', status: 'todo' })
+      root.childIds = ['request', 'assess', 'approval', 'rollout', 'postchange']
+      request.childIds = ['rq1', 'rq2', 'rq3']
+      assess.childIds = ['as1', 'as2', 'as3']
+      approval.childIds = ['ap1', 'ap2', 'ap3']
+      rollout.childIds = ['ro1', 'ro2', 'ro3', 'ro4']
+      postchange.childIds = ['pc1', 'pc2', 'pc3']
+      return { nodes: { root, request, assess, approval, rollout, postchange, rq1, rq2, rq3, as1, as2, as3, ap1, ap2, ap3, ro1, ro2, ro3, ro4, pc1, pc2, pc3 }, rootId: 'root' }
+    },
+  },
+
+  // ── CRM & SALES ─────────────────────────────────────────────────────────────
+  {
+    id: 'sales-playbook', category: 'crm', popular: true,
+    name: 'Sales Playbook',
+    description: 'Stage-by-stage scripts, objections, collateral, and success metrics',
+    icon: '📖',
+    build: () => {
+      const root = node('root', 'Sales Playbook', null, 0)
+      const disco = node('disco', 'Discovery', 'root', 1, { color: 'blue' })
+      const demo = node('demo', 'Demo / Presentation', 'root', 1, { color: 'green' })
+      const proposal = node('proposal', 'Proposal', 'root', 1, { color: 'purple' })
+      const negotiate = node('negotiate', 'Negotiation', 'root', 1, { color: 'yellow' })
+      const close = node('close', 'Close', 'root', 1, { color: 'red' })
+      const d1 = node('d1', 'Qualifying questions', 'disco', 2, { issueType: 'task' })
+      const d2 = node('d2', 'Pain points to uncover', 'disco', 2, { issueType: 'task' })
+      const d3 = node('d3', 'Budget & timeline check', 'disco', 2, { issueType: 'task' })
+      const dm1 = node('dm1', 'Demo script / flow', 'demo', 2, { issueType: 'task' })
+      const dm2 = node('dm2', 'Key differentiators to show', 'demo', 2, { issueType: 'task' })
+      const dm3 = node('dm3', 'Common objections & rebuttals', 'demo', 2, { issueType: 'task', priority: 'high' })
+      const pr1 = node('pr1', 'Pricing tiers', 'proposal', 2, { issueType: 'task' })
+      const pr2 = node('pr2', 'Case studies to include', 'proposal', 2, { issueType: 'task' })
+      const pr3 = node('pr3', 'ROI calculator', 'proposal', 2, { issueType: 'task' })
+      const n1 = node('n1', 'Discount authority limits', 'negotiate', 2, { issueType: 'task', priority: 'high' })
+      const n2 = node('n2', 'Walk-away terms', 'negotiate', 2, { issueType: 'task', priority: 'critical' })
+      const n3 = node('n3', 'Multi-year incentives', 'negotiate', 2, { issueType: 'task' })
+      const cl1 = node('cl1', 'Contract templates', 'close', 2, { issueType: 'task' })
+      const cl2 = node('cl2', 'Signature process', 'close', 2, { issueType: 'task' })
+      const cl3 = node('cl3', 'Handoff to onboarding', 'close', 2, { issueType: 'task' })
+      root.childIds = ['disco', 'demo', 'proposal', 'negotiate', 'close']
+      disco.childIds = ['d1', 'd2', 'd3']
+      demo.childIds = ['dm1', 'dm2', 'dm3']
+      proposal.childIds = ['pr1', 'pr2', 'pr3']
+      negotiate.childIds = ['n1', 'n2', 'n3']
+      close.childIds = ['cl1', 'cl2', 'cl3']
+      return { nodes: { root, disco, demo, proposal, negotiate, close, d1, d2, d3, dm1, dm2, dm3, pr1, pr2, pr3, n1, n2, n3, cl1, cl2, cl3 }, rootId: 'root' }
+    },
+  },
+  {
+    id: 'account-plan', category: 'crm',
+    name: 'Account Plan',
+    description: 'Key account strategy with stakeholders, goals, and expansion opportunities',
+    icon: '🏢',
+    build: () => {
+      const root = node('root', 'Account: [Company Name]', null, 0)
+      const overview = node('overview', 'Account Overview', 'root', 1, { color: 'blue' })
+      const stakeholders = node('stakeholders', 'Stakeholders', 'root', 1, { color: 'green' })
+      const goals = node('goals', 'Goals & Objectives', 'root', 1, { color: 'purple' })
+      const risks = node('risks', 'Risks & Challenges', 'root', 1, { color: 'red' })
+      const expansion = node('expansion', 'Expansion Opportunities', 'root', 1, { color: 'yellow' })
+      const o1 = node('o1', 'Industry & company size', 'overview', 2, { issueType: 'task' })
+      const o2 = node('o2', 'Current contract value', 'overview', 2, { issueType: 'task' })
+      const o3 = node('o3', 'Products in use', 'overview', 2, { issueType: 'task' })
+      const o4 = node('o4', 'Renewal date', 'overview', 2, { issueType: 'task', priority: 'high' })
+      const sk1 = node('sk1', 'Executive sponsor', 'stakeholders', 2, { issueType: 'task' })
+      const sk2 = node('sk2', 'Day-to-day champion', 'stakeholders', 2, { issueType: 'task' })
+      const sk3 = node('sk3', 'Technical decision maker', 'stakeholders', 2, { issueType: 'task' })
+      const sk4 = node('sk4', 'Procurement / finance', 'stakeholders', 2, { issueType: 'task' })
+      const g1 = node('g1', 'Retain and renew', 'goals', 2, { issueType: 'task', status: 'in-progress' })
+      const g2 = node('g2', 'Upsell additional seats', 'goals', 2, { issueType: 'task', status: 'todo' })
+      const g3 = node('g3', 'Cross-sell new product', 'goals', 2, { issueType: 'task', status: 'todo' })
+      const ri1 = node('ri1', 'Competitor evaluation rumor', 'risks', 2, { issueType: 'bug', priority: 'critical' })
+      const ri2 = node('ri2', 'Budget freeze next quarter', 'risks', 2, { issueType: 'bug', priority: 'high' })
+      const ex1 = node('ex1', 'New department rollout', 'expansion', 2, { issueType: 'task', status: 'todo' })
+      const ex2 = node('ex2', 'Enterprise tier upgrade', 'expansion', 2, { issueType: 'task', status: 'todo' })
+      const ex3 = node('ex3', 'Training & services upsell', 'expansion', 2, { issueType: 'task', status: 'todo' })
+      root.childIds = ['overview', 'stakeholders', 'goals', 'risks', 'expansion']
+      overview.childIds = ['o1', 'o2', 'o3', 'o4']
+      stakeholders.childIds = ['sk1', 'sk2', 'sk3', 'sk4']
+      goals.childIds = ['g1', 'g2', 'g3']
+      risks.childIds = ['ri1', 'ri2']
+      expansion.childIds = ['ex1', 'ex2', 'ex3']
+      return { nodes: { root, overview, stakeholders, goals, risks, expansion, o1, o2, o3, o4, sk1, sk2, sk3, sk4, g1, g2, g3, ri1, ri2, ex1, ex2, ex3 }, rootId: 'root' }
+    },
+  },
+  {
+    id: 'lead-qualification', category: 'crm',
+    name: 'Lead Qualification (BANT)',
+    description: 'Budget, Authority, Need, Timeline scoring framework',
+    icon: '🎯',
+    build: () => {
+      const root = node('root', 'Lead Qualification — BANT', null, 0)
+      const budget = node('budget', 'Budget', 'root', 1, { color: 'green' })
+      const authority = node('authority', 'Authority', 'root', 1, { color: 'blue' })
+      const need = node('need', 'Need', 'root', 1, { color: 'purple' })
+      const timeline = node('timeline', 'Timeline', 'root', 1, { color: 'yellow' })
+      const scoring = node('scoring', 'Scoring & Decision', 'root', 1, { color: 'red' })
+      const b1 = node('b1', 'Has allocated budget?', 'budget', 2, { issueType: 'task' })
+      const b2 = node('b2', 'Budget range identified?', 'budget', 2, { issueType: 'task' })
+      const b3 = node('b3', 'Fits our pricing tier?', 'budget', 2, { issueType: 'task' })
+      const au1 = node('au1', 'Decision maker identified?', 'authority', 2, { issueType: 'task' })
+      const au2 = node('au2', 'Buying process mapped?', 'authority', 2, { issueType: 'task' })
+      const au3 = node('au3', 'Other approvers needed?', 'authority', 2, { issueType: 'task' })
+      const n1 = node('n1', 'Clear pain point?', 'need', 2, { issueType: 'task' })
+      const n2 = node('n2', 'Using competitor / workaround?', 'need', 2, { issueType: 'task' })
+      const n3 = node('n3', 'Urgency of pain?', 'need', 2, { issueType: 'task' })
+      const t1 = node('t1', 'Implementation deadline?', 'timeline', 2, { issueType: 'task' })
+      const t2 = node('t2', 'Evaluation timeframe?', 'timeline', 2, { issueType: 'task' })
+      const t3 = node('t3', 'Trigger event identified?', 'timeline', 2, { issueType: 'task' })
+      const sc1 = node('sc1', 'Score: Hot / Warm / Cold', 'scoring', 2, { issueType: 'task', priority: 'high' })
+      const sc2 = node('sc2', 'Next action', 'scoring', 2, { issueType: 'task' })
+      const sc3 = node('sc3', 'Disqualify criteria', 'scoring', 2, { issueType: 'task' })
+      root.childIds = ['budget', 'authority', 'need', 'timeline', 'scoring']
+      budget.childIds = ['b1', 'b2', 'b3']
+      authority.childIds = ['au1', 'au2', 'au3']
+      need.childIds = ['n1', 'n2', 'n3']
+      timeline.childIds = ['t1', 't2', 't3']
+      scoring.childIds = ['sc1', 'sc2', 'sc3']
+      return { nodes: { root, budget, authority, need, timeline, scoring, b1, b2, b3, au1, au2, au3, n1, n2, n3, t1, t2, t3, sc1, sc2, sc3 }, rootId: 'root' }
+    },
+  },
+  {
+    id: 'partnership-pipeline', category: 'crm',
+    name: 'Partnership Pipeline',
+    description: 'Partner discovery through integration and ongoing management',
+    icon: '🤝',
+    build: () => {
+      const root = node('root', 'Partnership Pipeline', null, 0)
+      const discover = node('discover', 'Discovery', 'root', 1, { color: 'blue' })
+      const outreach = node('outreach', 'Outreach', 'root', 1, { color: 'green' })
+      const negotiate = node('negotiate', 'Negotiation', 'root', 1, { color: 'yellow' })
+      const integrate = node('integrate', 'Integration', 'root', 1, { color: 'purple' })
+      const maintain = node('maintain', 'Maintenance', 'root', 1, { color: 'red' })
+      const ds1 = node('ds1', 'Identify potential partners', 'discover', 2, { issueType: 'task', status: 'done' })
+      const ds2 = node('ds2', 'Evaluate strategic fit', 'discover', 2, { issueType: 'task', status: 'done' })
+      const ds3 = node('ds3', 'Research their audience', 'discover', 2, { issueType: 'task', status: 'done' })
+      const or1 = node('or1', 'Initial contact', 'outreach', 2, { issueType: 'task', status: 'in-progress' })
+      const or2 = node('or2', 'Partnership proposal sent', 'outreach', 2, { issueType: 'task', status: 'todo' })
+      const or3 = node('or3', 'Intro meeting scheduled', 'outreach', 2, { issueType: 'task', status: 'todo' })
+      const ng1 = node('ng1', 'Define mutual value', 'negotiate', 2, { issueType: 'task', status: 'todo' })
+      const ng2 = node('ng2', 'Revenue share / terms', 'negotiate', 2, { issueType: 'task', status: 'todo' })
+      const ng3 = node('ng3', 'Legal review & contract', 'negotiate', 2, { issueType: 'task', status: 'todo' })
+      const ig1 = node('ig1', 'Technical integration', 'integrate', 2, { issueType: 'task', status: 'todo' })
+      const ig2 = node('ig2', 'Co-marketing assets', 'integrate', 2, { issueType: 'task', status: 'todo' })
+      const ig3 = node('ig3', 'Launch announcement', 'integrate', 2, { issueType: 'task', status: 'todo' })
+      const mn1 = node('mn1', 'Quarterly business review', 'maintain', 2, { issueType: 'task', status: 'todo' })
+      const mn2 = node('mn2', 'Performance metrics', 'maintain', 2, { issueType: 'task', status: 'todo' })
+      const mn3 = node('mn3', 'Renewal & expansion', 'maintain', 2, { issueType: 'task', status: 'todo' })
+      root.childIds = ['discover', 'outreach', 'negotiate', 'integrate', 'maintain']
+      discover.childIds = ['ds1', 'ds2', 'ds3']
+      outreach.childIds = ['or1', 'or2', 'or3']
+      negotiate.childIds = ['ng1', 'ng2', 'ng3']
+      integrate.childIds = ['ig1', 'ig2', 'ig3']
+      maintain.childIds = ['mn1', 'mn2', 'mn3']
+      return { nodes: { root, discover, outreach, negotiate, integrate, maintain, ds1, ds2, ds3, or1, or2, or3, ng1, ng2, ng3, ig1, ig2, ig3, mn1, mn2, mn3 }, rootId: 'root' }
+    },
+  },
+  {
+    id: 'customer-success', category: 'crm',
+    name: 'Customer Success Plan',
+    description: 'Onboarding through adoption, expansion, and renewal milestones',
+    icon: '🌟',
+    build: () => {
+      const root = node('root', 'Customer Success: [Account]', null, 0)
+      const onboard = node('onboard', 'Onboarding (0-30 days)', 'root', 1, { color: 'blue' })
+      const adopt = node('adopt', 'Adoption (30-90 days)', 'root', 1, { color: 'green' })
+      const expand = node('expand', 'Expansion (90-180 days)', 'root', 1, { color: 'purple' })
+      const renew = node('renew', 'Renewal', 'root', 1, { color: 'yellow' })
+      const health = node('health', 'Health Score Signals', 'root', 1, { color: 'red' })
+      const ob1 = node('ob1', 'Kickoff call', 'onboard', 2, { issueType: 'task', status: 'done' })
+      const ob2 = node('ob2', 'Technical setup complete', 'onboard', 2, { issueType: 'task', status: 'done' })
+      const ob3 = node('ob3', 'First value milestone hit', 'onboard', 2, { issueType: 'task', status: 'in-progress' })
+      const ob4 = node('ob4', 'Training sessions delivered', 'onboard', 2, { issueType: 'task', status: 'todo' })
+      const ad1 = node('ad1', 'Weekly active users target', 'adopt', 2, { issueType: 'task', status: 'todo' })
+      const ad2 = node('ad2', 'Feature adoption checklist', 'adopt', 2, { issueType: 'task', status: 'todo' })
+      const ad3 = node('ad3', 'Support ticket volume (low = good)', 'adopt', 2, { issueType: 'task', status: 'todo' })
+      const ex1 = node('ex1', 'Identify upsell opportunity', 'expand', 2, { issueType: 'task', status: 'todo' })
+      const ex2 = node('ex2', 'Executive business review', 'expand', 2, { issueType: 'task', status: 'todo' })
+      const ex3 = node('ex3', 'Case study / testimonial ask', 'expand', 2, { issueType: 'task', status: 'todo' })
+      const rn1 = node('rn1', 'Renewal conversation (60d out)', 'renew', 2, { issueType: 'task', status: 'todo', priority: 'high' })
+      const rn2 = node('rn2', 'Contract sent', 'renew', 2, { issueType: 'task', status: 'todo' })
+      const rn3 = node('rn3', 'Renewal closed', 'renew', 2, { issueType: 'task', status: 'todo' })
+      const h1 = node('h1', 'Login frequency declining', 'health', 2, { issueType: 'bug', priority: 'critical' })
+      const h2 = node('h2', 'Support tickets increasing', 'health', 2, { issueType: 'bug', priority: 'high' })
+      const h3 = node('h3', 'NPS score drop', 'health', 2, { issueType: 'bug', priority: 'high' })
+      root.childIds = ['onboard', 'adopt', 'expand', 'renew', 'health']
+      onboard.childIds = ['ob1', 'ob2', 'ob3', 'ob4']
+      adopt.childIds = ['ad1', 'ad2', 'ad3']
+      expand.childIds = ['ex1', 'ex2', 'ex3']
+      renew.childIds = ['rn1', 'rn2', 'rn3']
+      health.childIds = ['h1', 'h2', 'h3']
+      return { nodes: { root, onboard, adopt, expand, renew, health, ob1, ob2, ob3, ob4, ad1, ad2, ad3, ex1, ex2, ex3, rn1, rn2, rn3, h1, h2, h3 }, rootId: 'root' }
+    },
+  },
+
+  // ── SOCIAL MEDIA MARKETING ──────────────────────────────────────────────────
+  {
+    id: 'content-calendar', category: 'social', popular: true,
+    name: 'Content Calendar',
+    description: 'Weekly plan by platform with post types, copy status, and dates',
+    icon: '📅',
+    build: () => {
+      const root = node('root', 'Content Calendar — Week [X]', null, 0)
+      const mon = node('mon', 'Monday', 'root', 1, { color: 'blue' })
+      const wed = node('wed', 'Wednesday', 'root', 1, { color: 'green' })
+      const fri = node('fri', 'Friday', 'root', 1, { color: 'purple' })
+      const evergreen = node('evergreen', 'Evergreen / Repurpose', 'root', 1, { color: 'yellow' })
+      const metrics = node('metrics', 'Weekly Metrics', 'root', 1, { color: 'red' })
+      const m1 = node('m1', 'LinkedIn: Thought leadership post', 'mon', 2, { issueType: 'task', status: 'done' })
+      const m2 = node('m2', 'Twitter/X: Thread on [topic]', 'mon', 2, { issueType: 'task', status: 'done' })
+      const m3 = node('m3', 'Instagram: Story poll', 'mon', 2, { issueType: 'task', status: 'in-progress' })
+      const w1 = node('w1', 'Blog post published', 'wed', 2, { issueType: 'task', status: 'todo' })
+      const w2 = node('w2', 'LinkedIn: Share blog', 'wed', 2, { issueType: 'task', status: 'todo' })
+      const w3 = node('w3', 'Email newsletter', 'wed', 2, { issueType: 'task', status: 'todo' })
+      const f1 = node('f1', 'Instagram: Carousel post', 'fri', 2, { issueType: 'task', status: 'todo' })
+      const f2 = node('f2', 'Twitter/X: Engagement thread', 'fri', 2, { issueType: 'task', status: 'todo' })
+      const f3 = node('f3', 'TikTok/Reels: Short video', 'fri', 2, { issueType: 'task', status: 'todo' })
+      const eg1 = node('eg1', 'Repurpose blog → LinkedIn carousel', 'evergreen', 2, { issueType: 'task' })
+      const eg2 = node('eg2', 'Update last month\'s top post', 'evergreen', 2, { issueType: 'task' })
+      const mt1 = node('mt1', 'Impressions target', 'metrics', 2, { issueType: 'task' })
+      const mt2 = node('mt2', 'Engagement rate target', 'metrics', 2, { issueType: 'task' })
+      const mt3 = node('mt3', 'Follower growth target', 'metrics', 2, { issueType: 'task' })
+      root.childIds = ['mon', 'wed', 'fri', 'evergreen', 'metrics']
+      mon.childIds = ['m1', 'm2', 'm3']
+      wed.childIds = ['w1', 'w2', 'w3']
+      fri.childIds = ['f1', 'f2', 'f3']
+      evergreen.childIds = ['eg1', 'eg2']
+      metrics.childIds = ['mt1', 'mt2', 'mt3']
+      return { nodes: { root, mon, wed, fri, evergreen, metrics, m1, m2, m3, w1, w2, w3, f1, f2, f3, eg1, eg2, mt1, mt2, mt3 }, rootId: 'root' }
+    },
+  },
+  {
+    id: 'campaign-planner', category: 'social',
+    name: 'Campaign Planner',
+    description: 'Goal, audience, channels, creatives, budget, and KPIs',
+    icon: '🚀',
+    build: () => {
+      const root = node('root', 'Campaign: [Name]', null, 0)
+      const goal = node('goal', 'Campaign Goal', 'root', 1, { color: 'blue' })
+      const audience = node('audience', 'Target Audience', 'root', 1, { color: 'green' })
+      const channels = node('channels', 'Channels', 'root', 1, { color: 'purple' })
+      const creative = node('creative', 'Creatives & Assets', 'root', 1, { color: 'yellow' })
+      const budget = node('budget', 'Budget & Timeline', 'root', 1, { color: 'red' })
+      const gl1 = node('gl1', 'Primary objective (awareness/leads/sales)', 'goal', 2, { issueType: 'task', status: 'done' })
+      const gl2 = node('gl2', 'KPI targets', 'goal', 2, { issueType: 'task', status: 'done' })
+      const gl3 = node('gl3', 'Success criteria', 'goal', 2, { issueType: 'task', status: 'done' })
+      const au1 = node('au1', 'Persona / ICP definition', 'audience', 2, { issueType: 'task', status: 'done' })
+      const au2 = node('au2', 'Demographics & interests', 'audience', 2, { issueType: 'task' })
+      const au3 = node('au3', 'Retargeting segments', 'audience', 2, { issueType: 'task' })
+      const ch1 = node('ch1', 'Paid social (Meta, LinkedIn)', 'channels', 2, { issueType: 'task', status: 'in-progress' })
+      const ch2 = node('ch2', 'Organic social', 'channels', 2, { issueType: 'task', status: 'todo' })
+      const ch3 = node('ch3', 'Email sequences', 'channels', 2, { issueType: 'task', status: 'todo' })
+      const ch4 = node('ch4', 'Influencer / affiliate', 'channels', 2, { issueType: 'task', status: 'todo' })
+      const cr1 = node('cr1', 'Ad copy variations (3+)', 'creative', 2, { issueType: 'task', status: 'todo' })
+      const cr2 = node('cr2', 'Visual assets / video', 'creative', 2, { issueType: 'task', status: 'todo' })
+      const cr3 = node('cr3', 'Landing page', 'creative', 2, { issueType: 'task', status: 'todo' })
+      const bg1 = node('bg1', 'Total budget allocation', 'budget', 2, { issueType: 'task' })
+      const bg2 = node('bg2', 'Per-channel split', 'budget', 2, { issueType: 'task' })
+      const bg3 = node('bg3', 'Launch date', 'budget', 2, { issueType: 'task', priority: 'high' })
+      const bg4 = node('bg4', 'End date / review date', 'budget', 2, { issueType: 'task' })
+      root.childIds = ['goal', 'audience', 'channels', 'creative', 'budget']
+      goal.childIds = ['gl1', 'gl2', 'gl3']
+      audience.childIds = ['au1', 'au2', 'au3']
+      channels.childIds = ['ch1', 'ch2', 'ch3', 'ch4']
+      creative.childIds = ['cr1', 'cr2', 'cr3']
+      budget.childIds = ['bg1', 'bg2', 'bg3', 'bg4']
+      return { nodes: { root, goal, audience, channels, creative, budget, gl1, gl2, gl3, au1, au2, au3, ch1, ch2, ch3, ch4, cr1, cr2, cr3, bg1, bg2, bg3, bg4 }, rootId: 'root' }
+    },
+  },
+  {
+    id: 'influencer-outreach', category: 'social',
+    name: 'Influencer Outreach',
+    description: 'Identify, vet, reach out, negotiate, and track influencer deliverables',
+    icon: '👥',
+    build: () => {
+      const root = node('root', 'Influencer Outreach', null, 0)
+      const identify = node('identify', 'Identify & Research', 'root', 1, { color: 'blue' })
+      const vet = node('vet', 'Vet & Qualify', 'root', 1, { color: 'green' })
+      const reach = node('reach', 'Outreach', 'root', 1, { color: 'purple' })
+      const collab = node('collab', 'Collaboration', 'root', 1, { color: 'yellow' })
+      const measure = node('measure', 'Measure & Report', 'root', 1, { color: 'red' })
+      const id1 = node('id1', 'Search relevant hashtags & niches', 'identify', 2, { issueType: 'task', status: 'done' })
+      const id2 = node('id2', 'Build shortlist (20+)', 'identify', 2, { issueType: 'task', status: 'done' })
+      const id3 = node('id3', 'Check audience alignment', 'identify', 2, { issueType: 'task', status: 'in-progress' })
+      const v1 = node('v1', 'Engagement rate check', 'vet', 2, { issueType: 'task' })
+      const v2 = node('v2', 'Fake follower audit', 'vet', 2, { issueType: 'task' })
+      const v3 = node('v3', 'Brand safety review', 'vet', 2, { issueType: 'task', priority: 'high' })
+      const rc1 = node('rc1', 'Personalized DM/email', 'reach', 2, { issueType: 'task', status: 'todo' })
+      const rc2 = node('rc2', 'Media kit requested', 'reach', 2, { issueType: 'task', status: 'todo' })
+      const rc3 = node('rc3', 'Follow-up sequence', 'reach', 2, { issueType: 'task', status: 'todo' })
+      const co1 = node('co1', 'Negotiate terms & deliverables', 'collab', 2, { issueType: 'task', status: 'todo' })
+      const co2 = node('co2', 'Content brief shared', 'collab', 2, { issueType: 'task', status: 'todo' })
+      const co3 = node('co3', 'Review & approve draft', 'collab', 2, { issueType: 'task', status: 'todo' })
+      const co4 = node('co4', 'Publish & amplify', 'collab', 2, { issueType: 'task', status: 'todo' })
+      const ms1 = node('ms1', 'Track impressions & reach', 'measure', 2, { issueType: 'task' })
+      const ms2 = node('ms2', 'Track conversions / UTMs', 'measure', 2, { issueType: 'task' })
+      const ms3 = node('ms3', 'ROI calculation', 'measure', 2, { issueType: 'task', priority: 'high' })
+      root.childIds = ['identify', 'vet', 'reach', 'collab', 'measure']
+      identify.childIds = ['id1', 'id2', 'id3']
+      vet.childIds = ['v1', 'v2', 'v3']
+      reach.childIds = ['rc1', 'rc2', 'rc3']
+      collab.childIds = ['co1', 'co2', 'co3', 'co4']
+      measure.childIds = ['ms1', 'ms2', 'ms3']
+      return { nodes: { root, identify, vet, reach, collab, measure, id1, id2, id3, v1, v2, v3, rc1, rc2, rc3, co1, co2, co3, co4, ms1, ms2, ms3 }, rootId: 'root' }
+    },
+  },
+  {
+    id: 'social-media-audit', category: 'social',
+    name: 'Social Media Audit',
+    description: 'Per-platform analysis of followers, engagement, content, and gaps',
+    icon: '🔎',
+    build: () => {
+      const root = node('root', 'Social Media Audit', null, 0)
+      const linkedin = node('linkedin', 'LinkedIn', 'root', 1, { color: 'blue' })
+      const twitter = node('twitter', 'Twitter / X', 'root', 1, { color: 'green' })
+      const instagram = node('instagram', 'Instagram', 'root', 1, { color: 'purple' })
+      const tiktok = node('tiktok', 'TikTok', 'root', 1, { color: 'yellow' })
+      const actions = node('actions', 'Action Plan', 'root', 1, { color: 'red' })
+      const li1 = node('li1', 'Followers & growth rate', 'linkedin', 2, { issueType: 'task' })
+      const li2 = node('li2', 'Engagement rate (avg)', 'linkedin', 2, { issueType: 'task' })
+      const li3 = node('li3', 'Top 3 performing posts', 'linkedin', 2, { issueType: 'task' })
+      const li4 = node('li4', 'Gaps & opportunities', 'linkedin', 2, { issueType: 'task', priority: 'high' })
+      const tw1 = node('tw1', 'Followers & growth rate', 'twitter', 2, { issueType: 'task' })
+      const tw2 = node('tw2', 'Engagement rate (avg)', 'twitter', 2, { issueType: 'task' })
+      const tw3 = node('tw3', 'Top 3 performing posts', 'twitter', 2, { issueType: 'task' })
+      const tw4 = node('tw4', 'Gaps & opportunities', 'twitter', 2, { issueType: 'task', priority: 'high' })
+      const ig1 = node('ig1', 'Followers & growth rate', 'instagram', 2, { issueType: 'task' })
+      const ig2 = node('ig2', 'Engagement rate (avg)', 'instagram', 2, { issueType: 'task' })
+      const ig3 = node('ig3', 'Top 3 performing posts', 'instagram', 2, { issueType: 'task' })
+      const ig4 = node('ig4', 'Gaps & opportunities', 'instagram', 2, { issueType: 'task', priority: 'high' })
+      const tk1 = node('tk1', 'Followers & growth rate', 'tiktok', 2, { issueType: 'task' })
+      const tk2 = node('tk2', 'View-to-engagement ratio', 'tiktok', 2, { issueType: 'task' })
+      const tk3 = node('tk3', 'Top 3 performing videos', 'tiktok', 2, { issueType: 'task' })
+      const ac1 = node('ac1', 'Double down on [platform]', 'actions', 2, { issueType: 'task', status: 'todo', priority: 'high' })
+      const ac2 = node('ac2', 'Reduce effort on [platform]', 'actions', 2, { issueType: 'task', status: 'todo' })
+      const ac3 = node('ac3', 'Content format experiments', 'actions', 2, { issueType: 'task', status: 'todo' })
+      const ac4 = node('ac4', 'Posting frequency adjustments', 'actions', 2, { issueType: 'task', status: 'todo' })
+      root.childIds = ['linkedin', 'twitter', 'instagram', 'tiktok', 'actions']
+      linkedin.childIds = ['li1', 'li2', 'li3', 'li4']
+      twitter.childIds = ['tw1', 'tw2', 'tw3', 'tw4']
+      instagram.childIds = ['ig1', 'ig2', 'ig3', 'ig4']
+      tiktok.childIds = ['tk1', 'tk2', 'tk3']
+      actions.childIds = ['ac1', 'ac2', 'ac3', 'ac4']
+      return { nodes: { root, linkedin, twitter, instagram, tiktok, actions, li1, li2, li3, li4, tw1, tw2, tw3, tw4, ig1, ig2, ig3, ig4, tk1, tk2, tk3, ac1, ac2, ac3, ac4 }, rootId: 'root' }
+    },
+  },
+  {
+    id: 'brand-launch', category: 'social',
+    name: 'Brand Launch Playbook',
+    description: 'Pre-launch, launch day, and post-launch per channel with tasks',
+    icon: '🎉',
+    build: () => {
+      const root = node('root', 'Brand Launch Playbook', null, 0)
+      const pre = node('pre', 'Pre-Launch (2-4 weeks)', 'root', 1, { color: 'blue' })
+      const launch = node('launch', 'Launch Day', 'root', 1, { color: 'green' })
+      const post = node('post', 'Post-Launch (1-2 weeks)', 'root', 1, { color: 'purple' })
+      const assets = node('assets', 'Assets & Collateral', 'root', 1, { color: 'yellow' })
+      const pr1 = node('pr1', 'Teaser content series', 'pre', 2, { issueType: 'task', status: 'todo' })
+      const pr2 = node('pr2', 'Email list warm-up', 'pre', 2, { issueType: 'task', status: 'todo' })
+      const pr3 = node('pr3', 'Influencer seeding', 'pre', 2, { issueType: 'task', status: 'todo' })
+      const pr4 = node('pr4', 'Press kit distributed', 'pre', 2, { issueType: 'task', status: 'todo' })
+      const pr5 = node('pr5', 'Countdown posts scheduled', 'pre', 2, { issueType: 'task', status: 'todo' })
+      const ld1 = node('ld1', 'Announcement post (all platforms)', 'launch', 2, { issueType: 'task', status: 'todo', priority: 'critical' })
+      const ld2 = node('ld2', 'Email blast to subscribers', 'launch', 2, { issueType: 'task', status: 'todo', priority: 'critical' })
+      const ld3 = node('ld3', 'Live event / AMA', 'launch', 2, { issueType: 'task', status: 'todo' })
+      const ld4 = node('ld4', 'Engage all comments & shares', 'launch', 2, { issueType: 'task', status: 'todo', priority: 'high' })
+      const po1 = node('po1', 'User-generated content push', 'post', 2, { issueType: 'task', status: 'todo' })
+      const po2 = node('po2', 'Performance report (7-day)', 'post', 2, { issueType: 'task', status: 'todo' })
+      const po3 = node('po3', 'Follow-up nurture sequence', 'post', 2, { issueType: 'task', status: 'todo' })
+      const po4 = node('po4', 'Iterate based on data', 'post', 2, { issueType: 'task', status: 'todo' })
+      const as1 = node('as1', 'Brand guidelines finalized', 'assets', 2, { issueType: 'task', status: 'done' })
+      const as2 = node('as2', 'Social media graphics pack', 'assets', 2, { issueType: 'task', status: 'in-progress' })
+      const as3 = node('as3', 'Video / motion assets', 'assets', 2, { issueType: 'task', status: 'todo' })
+      const as4 = node('as4', 'Website / landing page ready', 'assets', 2, { issueType: 'task', status: 'in-progress' })
+      root.childIds = ['pre', 'launch', 'post', 'assets']
+      pre.childIds = ['pr1', 'pr2', 'pr3', 'pr4', 'pr5']
+      launch.childIds = ['ld1', 'ld2', 'ld3', 'ld4']
+      post.childIds = ['po1', 'po2', 'po3', 'po4']
+      assets.childIds = ['as1', 'as2', 'as3', 'as4']
+      return { nodes: { root, pre, launch, post, assets, pr1, pr2, pr3, pr4, pr5, ld1, ld2, ld3, ld4, po1, po2, po3, po4, as1, as2, as3, as4 }, rootId: 'root' }
     },
   },
 ]
