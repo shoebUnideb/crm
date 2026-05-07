@@ -417,6 +417,22 @@ export function useProjects(userId) {
     // Templates/exports come in old flat format; migrateProject handles both
     const flat = { ...projData, id, selectedNodeId: null, extraEdges: projData.extraEdges ?? [], createdAt: now, updatedAt: now }
     const migrated = migrateProject(flat)
+    // Auto-assign nodeKeys to all nodes in all maps
+    const prefix = migrated.nodePrefix || computeNodePrefix(migrated.name || 'New Project')
+    let counter = migrated.nodeCounter || 0
+    if (migrated.maps) {
+      for (const mapId of Object.keys(migrated.maps)) {
+        const map = migrated.maps[mapId]
+        if (!map.nodes) continue
+        for (const nodeId of Object.keys(map.nodes)) {
+          if (!map.nodes[nodeId].nodeKey) {
+            counter++
+            map.nodes[nodeId] = { ...map.nodes[nodeId], nodeKey: `${prefix}-${String(counter).padStart(3, '0')}` }
+          }
+        }
+      }
+    }
+    migrated.nodeCounter = counter
     const injected = injectPositions({ [id]: migrated })
     setData(d => ({ activeId: id, projects: { ...d.projects, ...injected } }))
   }
@@ -450,9 +466,10 @@ export function useProjects(userId) {
 
   function renameProject(id, name) {
     if (!name?.trim()) return
+    const trimmed = name.trim()
     setData(d => ({
       ...d,
-      projects: { ...d.projects, [id]: { ...d.projects[id], name: name.trim(), updatedAt: new Date().toISOString() } },
+      projects: { ...d.projects, [id]: { ...d.projects[id], name: trimmed, nodePrefix: computeNodePrefix(trimmed), updatedAt: new Date().toISOString() } },
     }))
   }
 
@@ -637,13 +654,25 @@ export function useProjects(userId) {
     setData(d => {
       const proj = d.projects[projectId]
       if (!proj) return d
+      // Auto-assign nodeKeys to all template nodes
+      const prefix = proj.nodePrefix || computeNodePrefix(proj.name || 'New Project')
+      let counter = proj.nodeCounter || 0
+      const keyedNodes = { ...map.nodes }
+      for (const nodeId of Object.keys(keyedNodes)) {
+        if (!keyedNodes[nodeId].nodeKey) {
+          counter++
+          keyedNodes[nodeId] = { ...keyedNodes[nodeId], nodeKey: `${prefix}-${String(counter).padStart(3, '0')}` }
+        }
+      }
+      const keyedMap = { ...map, nodes: keyedNodes }
       return {
         ...d,
         projects: {
           ...d.projects,
           [projectId]: {
             ...proj,
-            maps: { ...proj.maps, [mapId]: map },
+            nodeCounter: counter,
+            maps: { ...proj.maps, [mapId]: keyedMap },
             mapOrder: [...(proj.mapOrder || []), mapId],
             activeMapId: mapId,
             updatedAt: now,
@@ -1071,7 +1100,31 @@ export function useProjects(userId) {
     expandAll: () => dispatchTree({ type: EXPAND_ALL }),
     autoColor: () => dispatchTree({ type: AUTO_COLOR }),
     setNodeUrl: (nodeId, url) => dispatchTree({ type: SET_NODE_URL, nodeId, url }),
-    pasteSubtree: (nodes, rootId, parentId) => dispatchTree({ type: PASTE_SUBTREE, nodes, rootId, parentId }),
+    pasteSubtree: (nodes, rootId, parentId) => {
+      // Auto-assign nodeKeys to pasted template nodes
+      const proj = data.projects[data.activeId]
+      if (proj) {
+        const prefix = proj.nodePrefix || computeNodePrefix(proj.name || 'NODE')
+        let counter = proj.nodeCounter || 0
+        const keyed = { ...nodes }
+        for (const nodeId of Object.keys(keyed)) {
+          if (!keyed[nodeId].nodeKey) {
+            counter++
+            keyed[nodeId] = { ...keyed[nodeId], nodeKey: `${prefix}-${String(counter).padStart(3, '0')}` }
+          }
+        }
+        setData(d => ({
+          ...d,
+          projects: {
+            ...d.projects,
+            [d.activeId]: { ...d.projects[d.activeId], nodeCounter: counter },
+          },
+        }))
+        dispatchTree({ type: PASTE_SUBTREE, nodes: keyed, rootId, parentId })
+      } else {
+        dispatchTree({ type: PASTE_SUBTREE, nodes, rootId, parentId })
+      }
+    },
     bulkDelete: (nodeIds) => dispatchTree({ type: BULK_DELETE, nodeIds }),
     setNodeMeta: (nodeId, meta) => dispatchTree({ type: SET_NODE_META, nodeId, meta }),
     addComment: (nodeId, text, author) => dispatchTree({ type: ADD_NODE_COMMENT, nodeId, text, author }),

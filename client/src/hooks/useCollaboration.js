@@ -1,5 +1,6 @@
 import { useState, useEffect, useRef, useCallback } from 'react'
 import { WS_URL } from '../lib/projectsApi.js'
+import { eventBus, EVENTS } from '../lib/eventBus.js'
 
 /**
  * Manages WebSocket connection for real-time project collaboration.
@@ -75,6 +76,12 @@ export function useCollaboration() {
           break
         case 'error':
           console.warn('Collab WS error:', msg.message)
+          break
+        case 'overlay_invalidated':
+          eventBus.emit(EVENTS.GRAPH_OVERLAY_INVALIDATED, msg.overlayTypes)
+          break
+        case 'kicked':
+          eventBus.emit(EVENTS.KICKED_FROM_PROJECT, msg)
           break
       }
     }

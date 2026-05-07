@@ -120,15 +120,11 @@ export function usePanZoom() {
     if (e.deltaMode === 1) { dy *= 16; dx *= 16 }
     else if (e.deltaMode === 2) { dy *= 500; dx *= 500 }
 
-    // ctrlKey=true is synthesized by browsers for trackpad pinch gestures
-    // |deltaX| > 2 indicates a trackpad two-finger scroll (mouse wheels don't scroll horizontally)
-    const isPinch = e.ctrlKey
-    const isTrackpadScroll = !isPinch && Math.abs(dx) > 2
-
-    if (isPinch || (!isTrackpadScroll && dy !== 0)) {
-      // Zoom centered on cursor — clamp per-event delta to prevent runaway zoom
+    // ctrlKey=true is synthesized by browsers for trackpad pinch gestures AND Ctrl+scroll
+    // Standard behavior: pinch/Ctrl+scroll = zoom, everything else = pan
+    if (e.ctrlKey) {
       const clampedDy = Math.max(-200, Math.min(200, dy))
-      const factor = Math.exp(-clampedDy * 0.002)
+      const factor = Math.exp(-clampedDy * 0.003)
       setTransform(t => {
         const newScale = Math.max(MIN_SCALE, Math.min(MAX_SCALE, t.scale * factor))
         const ratio = newScale / t.scale
@@ -139,11 +135,13 @@ export function usePanZoom() {
         }
       })
     } else {
-      // Pan (trackpad two-finger scroll)
+      // Pan: two-finger scroll or mouse wheel (shift+wheel = horizontal pan)
+      const panX = e.shiftKey ? dy : dx
+      const panY = e.shiftKey ? 0 : dy
       setTransform(t => ({
         ...t,
-        translateX: t.translateX - dx,
-        translateY: t.translateY - dy,
+        translateX: t.translateX - panX,
+        translateY: t.translateY - panY,
       }))
     }
   }, [])

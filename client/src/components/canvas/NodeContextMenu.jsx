@@ -1,6 +1,6 @@
 import React, { useEffect, useRef } from 'react'
 
-export default function NodeContextMenu({ x, y, node, isRoot, onEdit, onDuplicate, onAddChild, onDelete, onEditNotes, onSetUrl, onSaveTemplate, onClose, onMerge, onSplit, onStartTimer, onStopTimer, timerActive, onOpenDetail }) {
+export default function NodeContextMenu({ x, y, node, isRoot, onEdit, onDuplicate, onAddChild, onDelete, onEditNotes, onSetUrl, onSaveTemplate, onClose, onMerge, onSplit, onStartTimer, onStopTimer, timerActive, onOpenDetail, onShowImpact, onShowDependencies }) {
   const menuRef = useRef(null)
 
   useEffect(() => {
@@ -60,6 +60,10 @@ export default function NodeContextMenu({ x, y, node, isRoot, onEdit, onDuplicat
       {!isRoot && node.parentId && item('Merge into parent', '↑', onMerge ?? (() => {}))}
       {/* Split node */}
       {(node.childIds?.length ?? 0) >= 2 && item('Split node', '⇄', onSplit ?? (() => {}))}
+      {/* Graph analysis */}
+      {(onShowImpact || onShowDependencies) && <div className="border-t border-gray-100 my-1" />}
+      {onShowDependencies && item('Show dependencies', '⚡', () => onShowDependencies(node.id))}
+      {onShowImpact && item('Impact analysis', '🎯', () => onShowImpact(node.id))}
       {!isRoot && <div className="border-t border-gray-100 my-1" />}
       {!isRoot && item('Delete', '🗑', onDelete, true)}
     </div>

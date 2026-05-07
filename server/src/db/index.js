@@ -59,6 +59,8 @@ export async function initDb() {
   `)
   await p.query(`ALTER TABLE users ADD COLUMN IF NOT EXISTS avatar TEXT`)
   await p.query(`ALTER TABLE users ADD COLUMN IF NOT EXISTS is_admin BOOLEAN DEFAULT false`)
+  await p.query(`ALTER TABLE project_members ADD COLUMN IF NOT EXISTS scope VARCHAR(50) DEFAULT 'project'`)
+  await p.query(`ALTER TABLE project_invites ADD COLUMN IF NOT EXISTS scope VARCHAR(50) DEFAULT 'project'`)
   await p.query(`
     CREATE TABLE IF NOT EXISTS project_invites (
       id SERIAL PRIMARY KEY,
@@ -233,6 +235,32 @@ export async function initDb() {
   await p.query(`CREATE INDEX IF NOT EXISTS idx_entity_links_target ON entity_links(target_type, target_id) WHERE deleted_at IS NULL`)
   await p.query(`CREATE INDEX IF NOT EXISTS idx_entity_links_project ON entity_links(project_id) WHERE deleted_at IS NULL`)
   await p.query(`CREATE UNIQUE INDEX IF NOT EXISTS idx_entity_links_unique_active ON entity_links(source_type, source_id, target_type, target_id, relation) WHERE deleted_at IS NULL`)
+
+  // Graph traversal indexes
+  await p.query(`CREATE INDEX IF NOT EXISTS idx_entity_links_traverse_fwd ON entity_links(source_type, source_id, target_type, target_id) WHERE deleted_at IS NULL`)
+  await p.query(`CREATE INDEX IF NOT EXISTS idx_entity_links_traverse_rev ON entity_links(target_type, target_id, source_type, source_id) WHERE deleted_at IS NULL`)
+  await p.query(`CREATE INDEX IF NOT EXISTS idx_entity_links_relation_fwd ON entity_links(source_type, source_id, relation) WHERE deleted_at IS NULL`)
+  await p.query(`CREATE INDEX IF NOT EXISTS idx_entity_links_project_relation ON entity_links(project_id, relation) WHERE deleted_at IS NULL`)
+  await p.query(`CREATE INDEX IF NOT EXISTS idx_entity_links_project_created ON entity_links(project_id, created_at DESC) WHERE deleted_at IS NULL`)
+  await p.query(`CREATE INDEX IF NOT EXISTS idx_entity_links_metadata ON entity_links USING GIN(metadata) WHERE deleted_at IS NULL`)
+
+  // Graph closure table (precomputed transitive closure for large projects)
+  await p.query(`
+    CREATE TABLE IF NOT EXISTS graph_closure (
+      id SERIAL PRIMARY KEY,
+      project_id VARCHAR(36) NOT NULL,
+      ancestor_type VARCHAR(50) NOT NULL,
+      ancestor_id TEXT NOT NULL,
+      descendant_type VARCHAR(50) NOT NULL,
+      descendant_id TEXT NOT NULL,
+      relation VARCHAR(50) NOT NULL,
+      depth INTEGER NOT NULL,
+      path TEXT[] NOT NULL,
+      computed_at TIMESTAMPTZ DEFAULT NOW()
+    )
+  `)
+  await p.query(`CREATE INDEX IF NOT EXISTS idx_closure_ancestor ON graph_closure(project_id, ancestor_type, ancestor_id)`)
+  await p.query(`CREATE INDEX IF NOT EXISTS idx_closure_descendant ON graph_closure(project_id, descendant_type, descendant_id)`)
 
   // Backfill entity_links from existing crm_deals that have node_id
   await p.query(`

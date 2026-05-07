@@ -22,4 +22,8 @@ export const EVENTS = {
   CRM_DEAL_UNLINKED: 'crm:deal_unlinked',
   NODE_LINKS_CHANGED: 'node:links_changed',
   NODE_DELETED: 'node:deleted',
+  GRAPH_OVERLAY_INVALIDATED: 'graph:overlay_invalidated',
+  GRAPH_EDGE_CREATED: 'graph:edge_created',
+  GRAPH_EDGE_DELETED: 'graph:edge_deleted',
+  KICKED_FROM_PROJECT: 'collab:kicked',
 }

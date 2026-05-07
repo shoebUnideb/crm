@@ -209,11 +209,20 @@ function Flyout({
   onDeleteMap, onRenameMap,
   onExport, onImport,
   importRef,
+  initialRenamingId, onRenameConsumed,
 }) {
-  const [renamingProjectId, setRenamingProjectId] = useState(null)
+  const [renamingProjectId, setRenamingProjectId] = useState(initialRenamingId || null)
   const [renamingMapId, setRenamingMapId] = useState(null)
   const [confirmDeleteMap, setConfirmDeleteMap] = useState(null)
   const color = projectColor(project.name)
+
+  // Accept externally-triggered rename (e.g. after programmatic project creation)
+  useEffect(() => {
+    if (initialRenamingId) {
+      setRenamingProjectId(initialRenamingId)
+      onRenameConsumed?.()
+    }
+  }, [initialRenamingId])
 
   const maps = useMemo(() => {
     if (!project.maps) return []
@@ -514,11 +523,21 @@ export default function ProjectsPanel({
   onSwitch, onCreate, onRename, onDelete, onClose,
   onExport, onImport, onShare, onShareMap, onFromTemplate,
   onCreateMap, onDeleteMap, onRenameMap, onSwitchMap, onCreateMapFromTemplate,
+  pendingRenameId, onPendingRenameConsumed,
 }) {
-  // Which project's flyout is pinned open (defaults to active project)
   const [openProjectId, setOpenProjectId] = useState(activeId)
   const [confirmDeleteProject, setConfirmDeleteProject] = useState(null)
+  const [flyoutRenameId, setFlyoutRenameId] = useState(null)
   const importRef = useRef(null)
+
+  // Consume pendingRenameId from parent (triggered after programmatic project creation)
+  useEffect(() => {
+    if (pendingRenameId) {
+      setOpenProjectId(pendingRenameId)
+      setFlyoutRenameId(pendingRenameId)
+      onPendingRenameConsumed?.()
+    }
+  }, [pendingRenameId])
 
   // Keep flyout in sync when active project changes externally
   useEffect(() => {
@@ -540,7 +559,10 @@ export default function ProjectsPanel({
 
   function handleCreateProject() {
     const id = onCreate('New Project')
-    if (id) setOpenProjectId(id)
+    if (id) {
+      setOpenProjectId(id)
+      setFlyoutRenameId(id)
+    }
   }
 
   function handleDeleteProject(id) {
@@ -683,6 +705,8 @@ export default function ProjectsPanel({
           onExport={onExport}
           onImport={onImport}
           importRef={importRef}
+          initialRenamingId={flyoutRenameId === openProject?.id ? flyoutRenameId : null}
+          onRenameConsumed={() => setFlyoutRenameId(null)}
         />
       ) : (
         <div style={{ width: 210, height: '100%', background: '#FAFBFC', borderRight: '1px solid #EBECF0', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>

@@ -58,12 +58,60 @@ export async function updateProjectName(projectId, name, userId) {
 export async function deleteProject(projectId, userId) {
   const member = await getMemberRole(projectId, userId)
   if (!member || member.role !== 'admin') throw new Error('Only admins can delete projects')
-  await query(`DELETE FROM projects WHERE id = $1`, [projectId])
+
+  const adminCount = await query(
+    `SELECT COUNT(*) FROM project_members WHERE project_id = $1 AND role = 'admin'`,
+    [projectId]
+  )
+  const isLastAdmin = parseInt(adminCount.rows[0].count) <= 1
+
+  if (isLastAdmin) {
+    await query(`DELETE FROM projects WHERE id = $1`, [projectId])
+    return { action: 'deleted' }
+  } else {
+    await query(
+      `DELETE FROM project_members WHERE project_id = $1 AND user_id = $2`,
+      [projectId, userId]
+    )
+    return { action: 'left' }
+  }
+}
+
+export async function leaveProject(projectId, userId) {
+  const member = await getMemberRole(projectId, userId)
+  if (!member) throw new Error('Not a member of this project')
+
+  if (member.role === 'admin') {
+    const adminCount = await query(
+      `SELECT COUNT(*) FROM project_members WHERE project_id = $1 AND role = 'admin'`,
+      [projectId]
+    )
+    const memberCount = await query(
+      `SELECT COUNT(*) FROM project_members WHERE project_id = $1`,
+      [projectId]
+    )
+    const isLastAdmin = parseInt(adminCount.rows[0].count) <= 1
+    const hasOtherMembers = parseInt(memberCount.rows[0].count) > 1
+
+    if (isLastAdmin && hasOtherMembers) {
+      throw new Error('You are the last admin. Promote another member to admin before leaving, or delete the project.')
+    }
+    if (isLastAdmin && !hasOtherMembers) {
+      await query(`DELETE FROM projects WHERE id = $1`, [projectId])
+      return { action: 'deleted' }
+    }
+  }
+
+  await query(
+    `DELETE FROM project_members WHERE project_id = $1 AND user_id = $2`,
+    [projectId, userId]
+  )
+  return { action: 'left' }
 }
 
 export async function getMembers(projectId) {
   const result = await query(
-    `SELECT pm.user_id, pm.role, pm.joined_at, u.email
+    `SELECT pm.user_id, pm.role, pm.joined_at, pm.scope, u.email
      FROM project_members pm
      JOIN users u ON u.id = pm.user_id
      WHERE pm.project_id = $1
@@ -105,20 +153,23 @@ export async function inviteMember(projectId, email, role, invitedBy) {
 export async function removeMember(projectId, userId, requesterId) {
   const requester = await getMemberRole(projectId, requesterId)
   if (!requester || requester.role !== 'admin') throw new Error('Only admins can remove members')
+  if (userId === requesterId) throw new Error('Use the leave endpoint to remove yourself')
   const target = await getMemberRole(projectId, userId)
   if (!target) throw new Error('Member not found')
   if (target.role === 'admin') {
-    // Check there's at least one other admin
     const adminCount = await query(
       `SELECT COUNT(*) FROM project_members WHERE project_id = $1 AND role = 'admin'`,
       [projectId]
     )
-    if (parseInt(adminCount.rows[0].count) <= 1) throw new Error('Cannot remove the last admin')
+    if (parseInt(adminCount.rows[0].count) <= 1) {
+      throw new Error('Cannot kick the last admin — delete the project instead')
+    }
   }
   await query(
     `DELETE FROM project_members WHERE project_id = $1 AND user_id = $2`,
     [projectId, userId]
   )
+  return { kickedUserId: userId, email: target.email || null }
 }
 
 export async function updateMemberRole(projectId, userId, role, requesterId) {
@@ -132,20 +183,20 @@ export async function updateMemberRole(projectId, userId, role, requesterId) {
 
 // ── Invites ────────────────────────────────────────────────────────────────────
 
-export async function createInvite(projectId, email, role, invitedBy) {
+export async function createInvite(projectId, email, role, invitedBy, scope = 'project') {
   const token = crypto.randomBytes(32).toString('hex')
   const expiresAt = new Date(Date.now() + 7 * 24 * 60 * 60 * 1000).toISOString() // 7 days
   await query(
-    `INSERT INTO project_invites (project_id, email, role, token, invited_by, expires_at)
-     VALUES ($1, $2, $3, $4, $5, $6)`,
-    [projectId, email.toLowerCase(), role, token, invitedBy, expiresAt]
+    `INSERT INTO project_invites (project_id, email, role, token, invited_by, expires_at, scope)
+     VALUES ($1, $2, $3, $4, $5, $6, $7)`,
+    [projectId, email.toLowerCase(), role, token, invitedBy, expiresAt, scope]
   )
   return token
 }
 
 export async function getInviteByToken(token) {
   const result = await query(
-    `SELECT pi.id, pi.project_id, pi.email, pi.role, pi.expires_at, pi.accepted_at,
+    `SELECT pi.id, pi.project_id, pi.email, pi.role, pi.expires_at, pi.accepted_at, pi.scope,
             p.name AS project_name,
             u.email AS invited_by_email
      FROM project_invites pi
@@ -166,14 +217,14 @@ export async function acceptInvite(token, userId) {
   const existing = await getMemberRole(invite.project_id, userId)
   if (existing) {
     await query(
-      `UPDATE project_members SET role = $1 WHERE project_id = $2 AND user_id = $3`,
-      [invite.role, invite.project_id, userId]
+      `UPDATE project_members SET role = $1, scope = $4 WHERE project_id = $2 AND user_id = $3`,
+      [invite.role, invite.project_id, userId, invite.scope || 'project']
     )
   } else {
     await query(
-      `INSERT INTO project_members (project_id, user_id, role, invited_by)
-       VALUES ($1, $2, $3, $4)`,
-      [invite.project_id, userId, invite.role, invite.invited_by]
+      `INSERT INTO project_members (project_id, user_id, role, invited_by, scope)
+       VALUES ($1, $2, $3, $4, $5)`,
+      [invite.project_id, userId, invite.role, invite.invited_by, invite.scope || 'project']
     )
   }
 
@@ -188,7 +239,7 @@ export async function getPendingInvites(projectId, requesterId) {
   const member = await getMemberRole(projectId, requesterId)
   if (!member || member.role !== 'admin') throw new Error('Only admins can view invites')
   const result = await query(
-    `SELECT pi.id, pi.email, pi.role, pi.created_at, pi.expires_at
+    `SELECT pi.id, pi.email, pi.role, pi.scope, pi.created_at, pi.expires_at
      FROM project_invites pi
      WHERE pi.project_id = $1
        AND pi.accepted_at IS NULL
