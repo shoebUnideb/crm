@@ -1,0 +1,1279 @@
+================================================================================
+                     CHART-TO-JIRA — COMPLETE FEATURE GUIDE
+================================================================================
+Every feature, every option, every keyboard shortcut — explained.
+Last updated: 2026-05-05
+================================================================================
+
+
+════════════════════════════════════════════════════════════════════════════════
+ SECTION 1 — GETTING STARTED
+════════════════════════════════════════════════════════════════════════════════
+
+1.1  SIGNING IN
+───────────────
+• Open the app in your browser.
+• Enter your email and password on the login screen.
+• Click "Sign in". If you don't have an account, use the registration link.
+• After sign-in you land on the main canvas with a default "My Project".
+
+1.2  THE MAIN LAYOUT
+────────────────────
+• TOP BAR   — app name, project name, node count, save indicator, Jira button,
+              user email, and Sign out.
+• CANVAS    — the main working area (dot-grid background by default).
+• BOTTOM TOOLBAR — all canvas tools organised in dropdown menus.
+• PANELS    — slide in from left (Projects, Dashboard) or right (Jira) when
+              their top-bar buttons are clicked.
+
+
+════════════════════════════════════════════════════════════════════════════════
+ SECTION 2 — PROJECTS
+════════════════════════════════════════════════════════════════════════════════
+
+2.1  OPENING THE PROJECTS PANEL
+────────────────────────────────
+• Click the folder icon "Projects" in the top-left header.
+• The panel slides in from the left. Press Escape or click outside to close.
+
+2.2  CREATE A NEW PROJECT
+──────────────────────────
+• In the Projects panel, click "+ New Project".
+• Type a name and press Enter (or click the checkmark).
+
+2.3  SWITCH BETWEEN PROJECTS
+─────────────────────────────
+• Click any project name in the Projects panel.
+• The canvas immediately loads that project.
+
+2.4  RENAME A PROJECT
+──────────────────────
+• Hover over a project in the panel — a pencil icon appears.
+• Click the pencil, type the new name, press Enter.
+
+2.5  DELETE A PROJECT
+──────────────────────
+• Hover over a project in the panel — a trash icon appears.
+• Click it. You will be asked to confirm.
+• If it's the only project, a blank "My Project" is created automatically.
+
+2.6  EXPORT A PROJECT
+──────────────────────
+• Hover over a project — a download icon appears.
+• Click it. A .json file is downloaded to your computer.
+• This JSON can be re-imported later (see Import below).
+
+2.7  IMPORT A PROJECT
+──────────────────────
+• In the Projects panel, click the "Import" button (upload icon).
+• Choose a .json file previously exported from this app.
+• The project is imported and activated automatically.
+
+2.8  DASHBOARD PANEL
+─────────────────────
+• Click "Dashboard" in the top header.
+• Shows all projects with node counts, dates, and status summaries.
+• Click any project row to switch to it.
+
+
+════════════════════════════════════════════════════════════════════════════════
+ SECTION 3 — NODES (BASIC)
+════════════════════════════════════════════════════════════════════════════════
+
+3.1  CREATE A CHILD NODE
+─────────────────────────
+• Hover over a node — a "+" button appears below it.
+• Click "+" to add a child.
+• OR: Select a node and press Tab.
+• OR: Right-click a node → "Add child".
+
+3.2  EDIT A NODE TITLE
+───────────────────────
+• Double-click any node.
+• Type the new title, press Enter to confirm or Escape to cancel.
+• OR: Select a node and press Enter to start editing.
+
+3.3  SELECT A NODE
+───────────────────
+• Click once to select. The node gets a blue border.
+• Selected nodes show a colour/shape palette above them (SVG overlay).
+
+3.4  DESELECT
+──────────────
+• Click an empty area of the canvas, or press Escape.
+
+3.5  DELETE A NODE
+───────────────────
+• Select a node, then press Delete or Backspace.
+• If the node has children, a confirmation dialog appears showing the total
+  count of nodes that will be removed.
+• OR: Hover over a node — a red "×" button appears in the top-right corner.
+• OR: Right-click → "Delete".
+
+3.6  MOVE (DRAG) A NODE
+────────────────────────
+• Click and hold a node, then drag it anywhere on the canvas.
+• Release to drop. Use Undo (Ctrl+Z) if you accidentally move something.
+• Snap to grid: enable in Organize menu → "Snap to grid" to lock movement
+  to a 20px grid.
+
+3.7  DRAG-TO-REPARENT
+──────────────────────
+• Drag a node slowly over another node. The target turns green.
+• Release — the dragged node becomes a child of the target.
+• This only works when the target is not a descendant of the dragged node.
+• The node cannot be reparented to its own descendant (prevented).
+
+3.8  DUPLICATE A NODE
+──────────────────────
+• Select a node and press Ctrl+D (Cmd+D on Mac).
+• OR: Right-click → "Duplicate".
+• The duplicated node (with its full subtree) appears offset by 80px.
+
+3.9  COLLAPSE / EXPAND A NODE
+───────────────────────────────
+• Click the small ▼/▶ toggle inside the node (right side, vertically centred).
+• A grey badge "N hidden" appears below when collapsed.
+
+3.10  COPY AND PASTE SUBTREE
+──────────────────────────────
+• Select a node and press Ctrl+C — copies the entire subtree.
+• Press Ctrl+V (with any node selected) to paste it as a child.
+• Pasting creates brand-new IDs — it's a full independent copy.
+
+3.11  PASTE TEXT AS TREE
+─────────────────────────
+• Copy any indented or bulleted text from another app (e.g., Notion, Word).
+• Click on the canvas (not on a node), then paste with Ctrl+V.
+• The app detects indentation levels and builds a subtree automatically.
+• Requires at least 2 non-empty lines — single lines are treated as clipboard.
+• Supports: spaces, tabs, "- " bullets, "* " bullets, "1. " numbered lists.
+
+
+════════════════════════════════════════════════════════════════════════════════
+ SECTION 4 — NODE COLOURS AND SHAPES
+════════════════════════════════════════════════════════════════════════════════
+
+4.1  CHANGE NODE COLOUR
+────────────────────────
+• Select a node — a floating palette appears above it.
+• Click any colour dot in the "Fill" row to apply.
+• The first dot (white with grey border) = default / no colour.
+• Colour is also applied to the connecting line to children.
+
+4.2  CHANGE NODE SHAPE
+───────────────────────
+• Select a node — in the palette, click a shape in the "Shape" row.
+  • ▭ Rectangle (default)
+  • ● Circle
+  • ◆ Diamond
+  • 📝 Sticky note (yellow, folded corner)
+
+4.3  AUTO-COLOUR BY DEPTH
+──────────────────────────
+• Click Organize menu → "Auto-color by depth".
+• Automatically assigns distinct colours based on each node's depth level.
+• Undo to revert.
+
+4.4  COLOUR BY FIELD
+──────────────────────
+• View menu → "Color by: Status / Priority / Assignee / Issue Type"
+• All nodes are coloured based on the selected field value.
+• Choose "Color by: Off" to remove the override.
+
+4.5  HEATMAP MODES
+───────────────────
+• View menu → "Heatmap: due date" — nodes closer to overdue glow red/orange.
+• View menu → "Heatmap: priority" — priority levels mapped to warm/cool colours.
+• View menu → "Heatmap: story points" — higher-point nodes show darker colours.
+• Toggle the same item again to turn off. Only one heatmap mode can be on at a time.
+
+
+════════════════════════════════════════════════════════════════════════════════
+ SECTION 5 — NODE METADATA (PROPERTIES PANEL)
+════════════════════════════════════════════════════════════════════════════════
+
+5.1  OPEN THE PROPERTIES PANEL
+────────────────────────────────
+• Select a node, then click "⚙ Props" in the floating palette.
+• The panel slides in from the right side.
+• Press Escape or click × to close.
+
+5.2  FIELDS YOU CAN SET
+─────────────────────────
+  Status        : todo / in-progress / blocked / done
+                  (custom statuses also available — see Section 5.11)
+  Priority      : critical / high / medium / low
+  Story Points  : numeric value (e.g. 3, 5, 8, 13)
+  Issue Type    : epic / story / task / bug / subtask
+  Assignee      : free text name (e.g. "Alice", "john@company.com")
+  Tags          : comma-separated labels (e.g. "backend, api, v2")
+  Due Date      : date picker (YYYY-MM-DD format)
+  Sprint        : free text sprint name (e.g. "Sprint 3", "Q2-W1")
+  Jira Key      : e.g. "ABC-42" — links the node to a Jira issue
+  Time Estimate : hours estimated (e.g. 4)
+  Time Logged   : hours actually worked
+  Alias         : a subtitle line shown below the node title on the canvas
+  Custom Icon   : an emoji shown top-left of the node (overrides issue type icon)
+  Recurring     : mark the node as a recurring task with a frequency
+  Image         : attach a photo/image — shows thumbnail in the panel + 🖼 badge on canvas
+  Custom Fields : any extra fields defined for this project (see Section 5.12)
+
+5.3  STATUS
+────────────
+• Affects the coloured stripe on the left edge of rect/sticky nodes.
+  • Grey  = todo
+  • Blue  = in-progress
+  • Green = done
+  • Red   = blocked
+• Status is used in Kanban, Sprint Board, Burndown, and Gantt charts.
+
+5.4  PRIORITY
+──────────────
+• Shows a small coloured dot at the top-left inside the node:
+  • Red dot    = critical
+  • Orange dot = high
+  • Yellow dot = medium
+  • Green dot  = low
+
+5.5  STORY POINTS
+──────────────────
+• A grey badge appears above the top-left corner of the node.
+• Also used in Velocity Chart, Burndown chart, and node size scaling.
+• Parent nodes show a green completion progress ring (top-right) when
+  descendants have statuses set.
+
+5.6  ISSUE TYPE
+────────────────
+• Displays a small emoji icon at the top-left of the node:
+  🟣 epic · 🟢 story · 🔵 task · 🔴 bug · ⚪ subtask
+• Overridden by a custom icon if one is set.
+
+5.7  ASSIGNEE
+──────────────
+• Initials circle appears above the top-right corner of the node.
+• Used in Swimlanes (by assignee), Resource Heatmap, and Assignee filter.
+
+5.8  DUE DATE
+──────────────
+• Overdue nodes (past due date, not "done") show a ⚠️ icon to the right.
+
+5.9  TIME ESTIMATE / TIME LOGGED
+──────────────────────────────────
+• A badge appears to the right of the node showing "Xh/Yh".
+• If logged > estimate, the badge turns red.
+• Time can also be logged automatically using the Time Tracker (Section 17).
+
+5.10  TAGS
+───────────
+• A purple badge with a count appears at the bottom-left of the node.
+• Clicking the badge count (in the Properties panel) shows all tags.
+• Used in the Filter Bar.
+
+5.11  CUSTOM STATUSES
+──────────────────────
+• In Canvas, click Tools menu → "Workflow states".
+• Define your own status names and colours (e.g. "Review", "QA").
+• These appear alongside the default 4 statuses in the Properties panel.
+• Set via Tools → "Workflow states" panel.
+
+5.12  CUSTOM FIELDS
+────────────────────
+• Go to Tools menu → "Custom fields…"
+• Click "+ Add" and give a name (e.g. "Team", "Customer", "Risk") and type
+  (Text or Number).
+• Click "Save".
+• Every Properties panel now has a "Custom Fields" section at the bottom
+  showing an input for each defined field.
+• Values are stored per-node and are exported to CSV and JSON.
+
+5.13  ALIAS (SUBTITLE)
+───────────────────────
+• In the Properties panel, type in the "Alias" field.
+• The text appears as a small grey subtitle below the node title on the canvas.
+• Useful for showing ticket numbers, short descriptions, or alternate names.
+
+5.14  CUSTOM ICON / EMOJI
+──────────────────────────
+• In the Properties panel, find the "Custom Icon" section.
+• Click one of the quick-pick emoji buttons, or type any emoji in the input.
+• Click "Clear" to remove the custom icon (reverts to issue type icon if set).
+• The icon appears at the top-left of the node.
+
+5.15  RECURRING TASKS
+──────────────────────
+• In the Properties panel, check "Mark as recurring".
+• Choose a frequency: Daily / Weekly / Monthly / Custom.
+• A 🔄 badge appears at the bottom-right of the node on the canvas.
+
+5.16  NODE IMAGE
+─────────────────
+• In the Properties panel, scroll to "IMAGE".
+• Click the file input and choose an image file (PNG, JPG, GIF, etc.).
+• The image is stored as a base64 data URL (no server upload needed).
+• A thumbnail preview shows in the panel; a 🖼 badge appears on the canvas.
+• Click the red "×" over the thumbnail to remove it.
+
+
+════════════════════════════════════════════════════════════════════════════════
+ SECTION 6 — NOTES
+════════════════════════════════════════════════════════════════════════════════
+
+6.1  OPEN NOTES
+────────────────
+• Select a node and click "📝 Notes" in the floating palette.
+• OR: Press N (with a node selected).
+• OR: Right-click → "Edit notes".
+• The Notes panel opens on the right side.
+
+6.2  WRITE NOTES
+─────────────────
+• The "Edit" tab is a plain textarea — type freely.
+• Supports Markdown formatting (rendered in the Preview tab).
+
+6.3  PREVIEW MARKDOWN
+──────────────────────
+• Click the "Preview" tab in the Notes panel header.
+• Markdown is rendered to HTML:
+  # Heading 1     →  large heading
+  ## Heading 2    →  medium heading
+  **bold**        →  bold
+  *italic*        →  italic
+  `code`          →  inline code block
+  - item          →  bullet list
+
+6.4  SAVE NOTES
+────────────────
+• Click "Save" button, or press Ctrl+Enter, or press Escape.
+• Notes auto-save when the panel loses focus (blur).
+
+6.5  NOTES INDICATOR
+─────────────────────
+• A 📝 badge appears at the bottom-right of a node that has notes.
+• Hovering over a node with notes shows a dark tooltip preview (first 4 lines).
+
+
+════════════════════════════════════════════════════════════════════════════════
+ SECTION 7 — CONNECTIONS (EDGES / ARROWS)
+════════════════════════════════════════════════════════════════════════════════
+
+7.1  DRAW A CONNECTION
+───────────────────────
+• Hover over a node — four blue port dots appear (N, S, E, W).
+• Click and drag from a port dot toward another node.
+• When you hover over the target, it gets a dashed-blue ring.
+• Release to create the connection.
+
+7.2  CONNECTION TYPES
+──────────────────────
+• Default arrow  — grey, solid line
+• Blocker        — red dashed line (red arrowhead)
+• Dependency     — purple dashed line (purple arrowhead)
+• Right-click a connection after selecting it to change its type.
+
+7.3  SELECT A CONNECTION
+─────────────────────────
+• Click the line (or the invisible wider hit area around it).
+• The line turns blue.
+
+7.4  DELETE A CONNECTION
+─────────────────────────
+• Select the connection (click it), then press Delete or Backspace.
+• OR: When an edge is selected, a floating "× Delete" button appears — click it.
+
+7.5  LABEL A CONNECTION
+────────────────────────
+• Click a connection to select it.
+• A floating "✏ Label" button appears near the midpoint.
+• Click it, type the label in the prompt, press OK.
+• The label is displayed along the line.
+
+7.6  DEPENDENCY EDGES (SEPARATE ACTION)
+─────────────────────────────────────────
+• Right-click a node → "Add dependency edge" to manually add a dependency
+  relationship from that node to another (you'll be prompted to select target).
+• These show as purple dashed arrows.
+
+7.7  DEPENDENCY-ONLY VIEW
+──────────────────────────
+• View menu → "Dependency graph only"
+• Hides all tree (parent-child) lines; only shows the custom connections.
+• Useful for reviewing dependency chains without visual clutter.
+
+7.8  CURVED vs ELBOW EDGES
+────────────────────────────
+• Organize menu → "Curved edges" — toggles tree edges between:
+  • Elbow (default) — 90-degree right-angle corners
+  • Bezier (curved) — smooth S-curve paths
+
+7.9  EDGE THICKNESS BY STORY POINTS
+─────────────────────────────────────
+• Tree edges automatically become thicker when the parent node has more story
+  points. Formula: min(4px, 1.5 + storyPoints/8).
+• This is always active — no toggle needed.
+
+
+════════════════════════════════════════════════════════════════════════════════
+ SECTION 8 — CANVAS NAVIGATION
+════════════════════════════════════════════════════════════════════════════════
+
+8.1  PAN
+─────────
+• Click and drag on empty canvas background.
+• OR: Middle-mouse drag.
+
+8.2  ZOOM
+──────────
+• Scroll the mouse wheel to zoom in/out.
+• Use the + / − buttons in the toolbar.
+• Click the zoom % number to open a preset menu (25%, 50%, 75%, 100%, 150%, 200%).
+
+8.3  FIT ALL NODES TO SCREEN
+──────────────────────────────
+• Click the "Fit" icon in the toolbar (between Zoom and View menu).
+• OR: Press F (when no node is selected and focus mode is off).
+
+8.4  MINIMAP
+─────────────
+• A small overview map is shown at the bottom-left.
+• Shows all nodes as grey dots and the current viewport as a blue rectangle.
+• Click anywhere on the minimap to pan the canvas to that location.
+• Toggle on/off: View menu → "Minimap".
+
+8.5  ARROW KEY NAVIGATION
+──────────────────────────
+• With a node selected:
+  Arrow Up     → navigate to parent node
+  Arrow Down   → navigate to first child
+  Arrow Left   → navigate to previous sibling
+  Arrow Right  → navigate to next sibling
+
+8.6  NAVIGATION HISTORY (Back / Forward)
+─────────────────────────────────────────
+• Alt + Arrow Left   → go back to the previously selected node
+• Alt + Arrow Right  → go forward (if you went back)
+• History stores the last 30 nodes visited in this session.
+
+8.7  FOCUS MODE
+────────────────
+• Select a node, then press F, OR toggle via View menu → "Focus mode (F)".
+• All nodes outside the selected node's subtree (ancestors + descendants) are
+  dimmed to 20% opacity.
+• Press F again (or deselect) to exit focus mode.
+• Great for presenting a specific feature area without distraction.
+
+8.8  BREADCRUMB TRAIL
+──────────────────────
+• When any node is selected, a breadcrumb bar appears at the top-left of the
+  canvas showing the path from root to the selected node.
+• Each segment is clickable — click any ancestor name to jump to that node.
+• Disappears when nothing is selected.
+
+8.9  QUICK JUMP TO JIRA KEY
+────────────────────────────
+• Press Ctrl+G (Cmd+G on Mac).
+• Type a Jira key (e.g. "ABC-42") in the prompt.
+• If a node with that key exists, the canvas pans to it and selects it.
+
+
+════════════════════════════════════════════════════════════════════════════════
+ SECTION 9 — SEARCH AND FILTER
+════════════════════════════════════════════════════════════════════════════════
+
+9.1  SEARCH NODES
+──────────────────
+• Press Ctrl+F or Ctrl+K (Cmd+F / Cmd+K on Mac), or click the 🔍 button.
+• Type to search node titles — results highlight in real time.
+• Click a result to select it and pan to it.
+
+9.2  COMMAND PALETTE
+─────────────────────
+• Press Ctrl+P (Cmd+P on Mac).
+• Searches both nodes AND project names simultaneously.
+• Use Arrow Up/Down to navigate results.
+• Press Enter to jump to the selected node or switch to that project.
+• Status dots and depth badges are shown for each result.
+
+9.3  FIND AND REPLACE
+──────────────────────
+• Press Ctrl+H (Cmd+H on Mac), or Tools menu → "Find & Replace (⌘H)".
+• Type in the "Find" field — matching nodes are highlighted in real time.
+• Check "Case sensitive" if needed.
+• The panel shows match count and a preview of the current match.
+• Use Prev / Next to navigate between matches.
+• Click "Replace" to replace the current match.
+• Click "Replace All" to replace all matches at once.
+
+9.4  FILTER BAR
+────────────────
+• Click the filter (funnel) icon in the toolbar.
+• Filter nodes by: Status, Priority, Assignee, Issue Type, Tags, Sprint.
+• Matched nodes are fully visible; non-matching nodes are dimmed.
+• A blue dot on the filter button indicates active filters.
+• Click × on the filter bar to clear.
+
+9.5  ASSIGNEE FILTER (QUICK PILL)
+───────────────────────────────────
+• Click the "Assignee" pill in the toolbar.
+• A dropdown shows all unique assignees in the project.
+• Click one to filter the canvas to only that person's nodes.
+• Click the × on the pill to clear.
+
+
+════════════════════════════════════════════════════════════════════════════════
+ SECTION 10 — LAYOUT
+════════════════════════════════════════════════════════════════════════════════
+
+10.1  AUTO LAYOUT (HIERARCHICAL)
+──────────────────────────────────
+• Organize menu → "Auto layout".
+• Arranges all nodes in a top-down tree using Reingold-Tilford algorithm.
+• Full undo available (Ctrl+Z).
+
+10.2  MIND MAP LAYOUT (RADIAL)
+───────────────────────────────
+• Organize menu → "Mind map layout".
+• Arranges children radially around the root node.
+• Full undo available.
+
+10.3  AUTO-LAYOUT ON ADD
+─────────────────────────
+• Organize menu → "Auto-layout on add" (toggle).
+• When on, every time you add a child node the full layout runs automatically.
+• Persists across sessions (saved to localStorage).
+
+10.4  SNAP TO GRID
+───────────────────
+• Organize menu → "Snap to grid".
+• All node drags snap to a 20px grid.
+• Grid lines are visible on the canvas background.
+
+10.5  COLLAPSE / EXPAND ALL
+────────────────────────────
+• Organize menu → "Collapse all" — collapses every node that has children.
+• Organize menu → "Expand all"   — expands every node.
+
+10.6  COLLAPSE TO DEPTH
+────────────────────────
+• Organize menu → "Collapse depth 1 / 2 / 3"
+• Collapses all nodes deeper than the chosen depth.
+• Example: "Collapse depth 1" = show only root and its direct children.
+
+10.7  RESET VIEW
+─────────────────
+• Organize menu → "Reset view" — resets zoom to 100% and centres the canvas.
+
+
+════════════════════════════════════════════════════════════════════════════════
+ SECTION 11 — GROUPS AND FRAMES
+════════════════════════════════════════════════════════════════════════════════
+
+11.1  CREATE A GROUP
+─────────────────────
+• Multi-select nodes (Shift+click several nodes).
+• Click the green "Group" button in the selection badge at the top.
+• Enter a group label when prompted.
+• A dashed coloured rectangle appears around all grouped nodes.
+
+11.2  DELETE A GROUP
+─────────────────────
+• Click the × in the top-right corner of the group box.
+• This deletes the group box only — not the nodes inside it.
+
+11.3  ADD A FRAME
+──────────────────
+• Organize menu → "Add frame".
+• The cursor changes — click and drag on the canvas to draw the frame.
+• Frames are dark bordered boxes used for labelling regions of the canvas.
+• Enter a label when prompted (or double-click the frame border to rename).
+
+11.4  DELETE A FRAME
+─────────────────────
+• Hover over a frame — a delete icon appears in the corner. Click it.
+
+11.5  ADD STICKY NOTE
+──────────────────────
+• Organize menu → "Add sticky note" — adds a yellow sticky note near the root.
+• OR: Right-click on the canvas background → "Add sticky note".
+• Sticky notes have a folded-corner shape. They can be edited and moved.
+• They behave like regular nodes but default to yellow colour.
+
+
+════════════════════════════════════════════════════════════════════════════════
+ SECTION 12 — MULTI-SELECT AND BULK OPERATIONS
+════════════════════════════════════════════════════════════════════════════════
+
+12.1  MULTI-SELECT
+───────────────────
+• Hold Shift and click multiple nodes.
+• A green badge at the top shows "N selected".
+
+12.2  BULK EDIT (SET SAME FIELD FOR ALL)
+─────────────────────────────────────────
+• With nodes selected, click "Edit" in the green badge.
+• The Bulk Edit panel opens — set status, priority, assignee, sprint, etc.
+• Changes apply to all selected nodes.
+
+12.3  BATCH STATUS UPDATE (QUICK)
+───────────────────────────────────
+• With nodes selected, use the "Set status…" dropdown in the green badge.
+• Choose a status — it's applied instantly to all selected nodes.
+• A toast confirms the change.
+
+12.4  GROUP SELECTED
+─────────────────────
+• With nodes selected, click "Group" in the green badge.
+• Enter a label — a group box is drawn around them.
+
+12.5  BULK DELETE
+──────────────────
+• With nodes selected, click "Delete" in the green badge.
+• If more than 3 nodes total (including descendants), a confirmation appears.
+
+12.6  CLEAR SELECTION
+──────────────────────
+• Click the ✕ in the green badge, or press Escape.
+
+
+════════════════════════════════════════════════════════════════════════════════
+ SECTION 13 — UNDO, REDO AND HISTORY
+════════════════════════════════════════════════════════════════════════════════
+
+13.1  UNDO / REDO
+──────────────────
+• Ctrl+Z (Cmd+Z)        → undo last action
+• Ctrl+Shift+Z (Cmd+Shift+Z) or Ctrl+Y → redo
+
+13.2  UNDO TOOLBAR BUTTONS
+────────────────────────────
+• The leftmost two buttons in the toolbar are undo/redo arrows.
+• They grey out when no undo/redo is available.
+• The depth count (how many steps are stored) is shown in the Tools → Undo
+  history panel.
+
+13.3  UNDO HISTORY PANEL
+─────────────────────────
+• Tools menu → "Undo history".
+• Shows a stack list of all undoable actions in the current session.
+• Up to 50 steps are stored per project.
+
+13.4  SNAPSHOTS
+────────────────
+• Tools menu → "Snapshots".
+• Click "+ Save snapshot" — enter a name, the entire project state is saved.
+• Click any snapshot name to restore it.
+• Click the trash icon to delete a snapshot.
+• Snapshots are stored in memory (lost when the browser tab is closed).
+• Use Export JSON for permanent saves.
+
+
+════════════════════════════════════════════════════════════════════════════════
+ SECTION 14 — NODE OPERATIONS (ADVANCED)
+════════════════════════════════════════════════════════════════════════════════
+
+14.1  MERGE NODE INTO PARENT
+─────────────────────────────
+• Right-click a node → "↑ Merge into parent".
+• The node is removed and all its children are re-parented directly to the
+  node's parent (at the same sibling position).
+• Useful for flattening unnecessary nesting.
+
+14.2  SPLIT NODE
+─────────────────
+• Right-click a node that has 2 or more children → "⇄ Split node".
+• Enter a name for the new sibling node when prompted.
+• The children are split in half — first half stays with the original node,
+  second half moves to the new sibling.
+• Both nodes remain as children of the same parent.
+
+14.3  CHECKLIST ON A NODE
+──────────────────────────
+• In the Properties panel, find the "Checklist" section.
+• Type an item and press Enter to add it.
+• Check items off as you complete them.
+• A progress badge appears below the node on canvas: "2/5" (done/total).
+• When all items are done, the badge turns green.
+
+14.4  REACTIONS / EMOJI REACTIONS
+───────────────────────────────────
+• Right-click a node → choose a reaction emoji.
+• Reaction counts appear below the node: 👍 3, 🔥 1, etc.
+• Click the same emoji again to remove your reaction.
+
+14.5  LOCK A NODE
+──────────────────
+• Right-click a node → "Lock node" (or Tools menu when node is selected).
+• A 🔒 icon appears inside the node.
+• A locked node cannot be moved, deleted, or edited — prevents accidents.
+• Right-click → "Unlock node" to remove the lock.
+
+14.6  SET NODE URL
+───────────────────
+• Select a node, click "🔗 URL" in the floating palette.
+• Paste or type a URL. Click OK.
+• A 🔗 badge appears at the bottom-right of the node.
+• The URL is included in CSV and Confluence exports.
+
+14.7  COMMENTS ON A NODE
+─────────────────────────
+• In the Properties panel, scroll to the "Comments" section.
+• Type a comment and press Enter or click "Add".
+• Comments show author, text, and timestamp.
+
+14.8  COMMENT REPLIES (THREADS)
+─────────────────────────────────
+• In the Properties panel Comments section, each comment has a "↩ Reply" button.
+• Click it — an inline input appears below that comment.
+• Type the reply and press Enter (or click "Send"), or Escape to cancel.
+• Replies are shown indented under the parent comment with a left blue border.
+
+14.9  NODE ALIAS
+─────────────────
+• In Properties panel, type in the "Alias" field.
+• A small grey subtitle appears below the main title on the canvas.
+
+14.10  TIME TRACKER
+────────────────────
+• Right-click a node → "⏱ Start timer".
+• A dark pill appears at the top-right of the canvas showing elapsed time and
+  the node name.
+• Click "Stop" in that pill to stop the timer.
+• The elapsed time (in hours, rounded to 0.1h) is added to the node's
+  "Time Logged" field automatically.
+• Right-click an active-timer node → "⏹ Stop timer" also stops it.
+
+
+════════════════════════════════════════════════════════════════════════════════
+ SECTION 15 — VIEWS
+════════════════════════════════════════════════════════════════════════════════
+
+15.1  KANBAN VIEW
+──────────────────
+• View menu → "Kanban".
+• Replaces the canvas with a board of columns: No Status / To Do / In Progress /
+  Blocked / Done.
+• Drag a card from one column to another to change status.
+• Clicking a card selects the node (so Properties panel works).
+• Toggle again to return to the canvas.
+
+15.2  TABLE VIEW
+─────────────────
+• View menu → "Table view".
+• Shows all nodes as sortable rows in a flat table.
+• Columns: Title, Status, Priority, Assignee, Story Points, Sprint, Jira Key.
+• Click a column header to sort.
+• Edit inline by clicking a cell.
+• Click × in the header to return to the canvas.
+
+15.3  TIMELINE / ROADMAP VIEW
+───────────────────────────────
+• View menu → "Timeline / roadmap".
+• Shows nodes on a horizontal timeline based on their Due Date.
+• Nodes without a due date are listed separately.
+
+15.4  GANTT CHART
+──────────────────
+• View menu → "Gantt chart".
+• Shows nodes as horizontal Gantt bars between Start Date and Due Date.
+• Requires at least a Due Date to be set on nodes.
+
+15.5  SPRINT BOARD
+───────────────────
+• View menu → "Sprint Board".
+• Groups nodes by Sprint field into vertical swim-lane columns.
+• Within each sprint, nodes are grouped by status.
+
+15.6  BURNDOWN CHART
+─────────────────────
+• View menu → "Burndown chart".
+• Shows story points burned down over time within a sprint.
+• Requires story points and due dates set on nodes in the same sprint.
+
+15.7  SWIMLANES
+────────────────
+• View menu → "Swimlanes" (toggles on the canvas view, not a replacement view).
+• Overlays horizontal bands on the canvas grouping nodes by assignee.
+• Sub-options appear when swimlanes are on:
+    "Swimlane by assignee" — group by the Assignee field (default)
+    "Swimlane by sprint"   — group by the Sprint field
+
+15.8  SPRINT PLANNING VIEW
+────────────────────────────
+• View menu → "Sprint planning".
+• Full-screen two-column view: Backlog (no sprint) on the left, current sprint
+  on the right.
+• Select a sprint from the dropdown at the top.
+• Click "→ Sprint" on any backlog item to assign it to the sprint.
+• Click "← Remove" on a sprint item to move it back to backlog.
+• Total items and story points are shown in the header.
+
+15.9  CRITICAL PATH
+────────────────────
+• View menu → "Critical path".
+• Highlights nodes that are on the critical path (longest dependency chain)
+  with an amber/gold border ring.
+
+15.10  COMPACT MODE
+────────────────────
+• View menu → "Compact mode".
+• Hides all node badges (priority, story points, assignee, reactions, jira key,
+  etc.) to reduce visual clutter.
+• Only titles and shapes are shown.
+
+15.11  SIZE NODES BY STORY POINTS
+───────────────────────────────────
+• View menu → "Size nodes by story points".
+• Nodes are scaled based on their story points value (0.7× – 2× of normal size).
+• Helpful for visually identifying heavy/light items at a glance.
+
+15.12  DEPENDENCY-ONLY VIEW
+─────────────────────────────
+• View menu → "Dependency graph only".
+• Hides all parent-child tree edges, shows only manually drawn connections.
+• Use alongside the edge type system for dependency reviews.
+
+
+════════════════════════════════════════════════════════════════════════════════
+ SECTION 16 — PLANNING TOOLS
+════════════════════════════════════════════════════════════════════════════════
+
+16.1  VELOCITY CHART
+─────────────────────
+• Tools menu → "Velocity chart".
+• A panel opens at the top-right showing a bar chart per sprint.
+• Blue bar = story points completed (done). Light blue = total planned.
+• Format: "X/Ypt" — X done out of Y planned.
+• Automatically computes from Sprint and Status fields on nodes.
+
+16.2  RESOURCE HEATMAP
+───────────────────────
+• Tools menu → "Resource heatmap".
+• A panel opens at the top-right showing a row per assignee.
+• Each row has:
+    - A stacked status bar (in-progress=blue, blocked=red, todo=grey, done=green)
+    - A capacity bar showing relative workload (red if overloaded = >5 tasks)
+• ⚠ icon appears next to anyone with more than 5 assigned tasks.
+
+16.3  STATISTICS PANEL
+───────────────────────
+• Tools menu → "Statistics".
+• Shows counts and breakdowns: nodes by status, priority, assignee, issue type.
+• Shows completion percentage across the project.
+
+16.4  WIP LIMITS ON KANBAN
+────────────────────────────
+• Open Kanban view.
+• Each column header has a pencil (✎) icon.
+• Click it and enter a WIP (Work In Progress) limit number.
+• The column header turns orange when the card count reaches/exceeds the limit.
+• Set limit to 0 to remove it.
+
+16.5  SPRINT PLANNING
+──────────────────────
+• (See Section 15.8 above for full details.)
+
+16.6  SWIMLANES BY SPRINT
+──────────────────────────
+• (See Section 15.7 above for full details.)
+
+
+════════════════════════════════════════════════════════════════════════════════
+ SECTION 17 — CANVAS DISPLAY
+════════════════════════════════════════════════════════════════════════════════
+
+17.1  DARK MODE
+────────────────
+• Click the moon icon 🌙 in the toolbar.
+• Switches the canvas background and UI to a dark slate theme.
+• Setting is persisted across sessions.
+
+17.2  PRESENTATION MODE
+────────────────────────
+• Press P or click the play icon ▶ in the toolbar.
+• The toolbar is hidden. A control bar appears at the top:
+    "← Prev"  — go to the previous node (sorted by depth)
+    "Next →"  — go to the next node
+    Count indicator showing current position
+    "P Exit"  — press P again or click "Exit" to leave
+• Each node is centred and zoomed to 1.5× as you step through.
+
+17.3  CANVAS BACKGROUND THEME
+───────────────────────────────
+• View menu → choose a background:
+    "Background: Dots"  — dot grid (default)
+    "Background: Grid"  — line grid
+    "Background: Solid" — flat colour, no pattern
+    "Background: None"  — completely transparent/white
+
+17.4  PROGRESS RING
+────────────────────
+• Parent nodes (with children) show a small circle chart at their top-right
+  corner when at least one descendant has a status set.
+• The ring fills green based on what % of descendants are "done".
+• The percentage number is shown in the centre of the ring.
+
+17.5  COMPLETION BAR
+─────────────────────
+• A thin green progress bar also appears at the very bottom of parent nodes
+  (inside the node border) showing the same done/total percentage.
+
+17.6  OVERDUE INDICATOR
+────────────────────────
+• If a node has a Due Date in the past and status is not "done",
+  a ⚠️ appears to the right of the node.
+
+
+════════════════════════════════════════════════════════════════════════════════
+ SECTION 18 — BOOKMARKS AND VIEWS
+════════════════════════════════════════════════════════════════════════════════
+
+18.1  SAVE A BOOKMARK
+──────────────────────
+• Set your desired zoom, pan position, and filters.
+• View menu → "Bookmarks" to open the bookmarks panel (top-left).
+• Click "+ Save current view" — enter a name and press OK.
+• The current transform, active filters, and assignee filter are saved.
+
+18.2  RESTORE A BOOKMARK
+─────────────────────────
+• View menu → "Bookmarks".
+• Click any bookmark name — the view, filters, and zoom are restored.
+
+18.3  DELETE A BOOKMARK
+────────────────────────
+• Open the Bookmarks panel, click the × next to the bookmark name.
+• Bookmarks are persisted to localStorage and survive browser refresh.
+
+
+════════════════════════════════════════════════════════════════════════════════
+ SECTION 19 — EXPORT
+════════════════════════════════════════════════════════════════════════════════
+
+19.1  EXPORT PNG
+─────────────────
+• Export menu → "Export PNG".
+• The current canvas view (at its current zoom) is downloaded as a PNG image.
+
+19.2  EXPORT SVG
+─────────────────
+• Export menu → "Export SVG".
+• Downloads a scalable vector version of the canvas.
+
+19.3  EXPORT CSV
+─────────────────
+• Export menu → "Export CSV".
+• All nodes exported as a flat CSV with columns:
+  ID, Title, Parent ID, Depth, Status, Priority, Story Points, Issue Type,
+  Assignee, Tags, Due Date, Sprint, Jira Key, Notes.
+• Compatible with import back into this app.
+
+19.4  IMPORT CSV
+─────────────────
+• Export menu → "Import CSV".
+• Choose a CSV file. Supported formats:
+    - This app's own CSV export (see above)
+    - Notion export (detects "Name" column without "Title")
+    - Linear export (detects "Title" + "Identifier" or "Team" columns)
+• Imported data creates a new project.
+
+19.5  CONFLUENCE MARKUP
+────────────────────────
+• Export menu → "Confluence markup".
+• Generates Confluence wiki markup for the entire tree.
+• A modal appears with the markup text — copy it to paste into Confluence.
+• Includes headings, metadata (status, priority, assignee, jira key, etc.),
+  notes in panels, and comments.
+
+19.6  MARKDOWN OUTLINE
+───────────────────────
+• Export menu → "Markdown outline".
+• Downloads a .md file with the tree as a nested checkbox list.
+• Completed nodes show [x], others show [ ].
+• Includes status, priority, assignee badges, and Jira key.
+
+19.7  EXPORT PDF
+─────────────────
+• Export menu → "Export PDF".
+• Opens the browser's print dialog — choose "Save as PDF".
+• A print-optimised view renders the canvas content without the toolbar.
+
+19.8  COPY SHARE LINK
+──────────────────────
+• Export menu → "Copy share link".
+• Encodes the entire project (nodes, edges, structure) as a base64 URL.
+• Anyone with the link can open it to view a read-only copy.
+• Note: very large projects may produce very long URLs.
+
+19.9  PROJECT TEMPLATES
+────────────────────────
+• Export menu → "Project templates".
+• A dialog shows built-in template projects (e.g. "Scrum Sprint", "Product
+  Roadmap", "Feature Planning").
+• Click a template to load it as a new project.
+
+19.10  AUTO-BACKUP EVERY 5 MINUTES
+────────────────────────────────────
+• Tools menu → "Auto-backup every 5min" (toggle).
+• When enabled, every 5 minutes the active project's nodes are silently
+  downloaded as a .json file.
+• File name format: "chart-backup-YYYY-MM-DD_HH-MM.json"
+• Setting is persisted — stays on after browser refresh.
+• A toast notification appears each time a backup is saved.
+
+
+════════════════════════════════════════════════════════════════════════════════
+ SECTION 20 — JIRA INTEGRATION
+════════════════════════════════════════════════════════════════════════════════
+
+20.1  OPEN THE JIRA PANEL
+──────────────────────────
+• Click "Jira" in the top-right header (only active when a project is open).
+• The panel slides in from the right.
+
+20.2  CONFIGURE JIRA CONNECTION
+─────────────────────────────────
+• Enter your Jira domain (e.g. "yourcompany.atlassian.net").
+• Enter your Jira email and API token.
+  (Get a token at: https://id.atlassian.com/manage-profile/security/api-tokens)
+• Click "Connect" or "Save".
+
+20.3  IMPORT VIA JQL (JIRA QUERY LANGUAGE)
+───────────────────────────────────────────
+• Type a JQL query in the input (e.g. "project = ABC AND sprint in openSprints()").
+• Click "Fetch".
+• Matching issues appear as a preview list.
+• Click "Import to canvas" — nodes are created from the issues and added to
+  the current project as children of the root.
+• Issue fields imported: summary (title), status, issue type, assignee, priority,
+  and Jira key.
+
+20.4  TWO-WAY SYNC (PUSH STATUS TO JIRA)
+──────────────────────────────────────────
+• In the Jira panel, nodes that have a Jira key set are listed.
+• Click "Sync status" on a node to push its current status to Jira.
+• Alternatively, use the "Push all" button to sync all linked nodes at once.
+
+20.5  APPLY JIRA KEYS IN BULK
+───────────────────────────────
+• In the Jira panel, there's a key mapping section.
+• Enter "Node title → JIRA-KEY" mappings and apply them all at once.
+• OR: use Export menu → "Project templates" → apply Jira key scheme.
+
+20.6  PUSH NODES TO JIRA (CREATE NEW ISSUES)
+─────────────────────────────────────────────
+• In the Jira panel, scroll to "Push Nodes → Jira".
+• Enter the target Project Key (e.g. "ABC").
+• Click "Push to Jira".
+• A confirmation shows how many nodes will be created (only nodes without an
+  existing Jira key are pushed).
+• Issues are created via the Jira REST API with:
+    - Summary = node title
+    - Issue type = node issue type (or "Task" if not set)
+    - Description = node notes (if any)
+• After push, each created node gets its new Jira key assigned automatically.
+• A results list shows ✓ success or ✗ failure for each node.
+
+20.7  BULK JIRA CREATE (FROM CANVAS)
+──────────────────────────────────────
+• With multiple nodes selected on the canvas, the Jira panel shows a
+  "Bulk create selected" option.
+• Works the same as push above but limited to your selection.
+
+
+════════════════════════════════════════════════════════════════════════════════
+ SECTION 21 — WEBHOOKS AND NOTIFICATIONS
+════════════════════════════════════════════════════════════════════════════════
+
+21.1  OPEN WEBHOOKS PANEL
+──────────────────────────
+• Tools menu → "Webhooks & Slack".
+
+21.2  ADD A WEBHOOK
+────────────────────
+• Enter a webhook URL (e.g. a Slack Incoming Webhook URL).
+• Select which events to fire on:
+    - node_created   (when a new child is added)
+    - node_deleted   (when a node is removed)
+    - status_change  (when a node's status is changed)
+    - comment_added  (when a comment is posted)
+    - node_reparented (when a node is dragged to a new parent)
+• Click "Add".
+
+21.3  SLACK INTEGRATION
+────────────────────────
+• Use a Slack Incoming Webhook URL as the webhook URL.
+• Webhook fires a JSON payload with event type, node title, project name, etc.
+• Slack renders it as a message in the configured channel.
+
+21.4  TEST A WEBHOOK
+─────────────────────
+• Click the "Test" button next to a webhook to send a test payload.
+
+21.5  DELETE A WEBHOOK
+───────────────────────
+• Click the × next to the webhook URL to remove it.
+
+
+════════════════════════════════════════════════════════════════════════════════
+ SECTION 22 — ACTIVITY LOG
+════════════════════════════════════════════════════════════════════════════════
+
+22.1  OPEN ACTIVITY LOG
+────────────────────────
+• Tools menu → "Activity log".
+
+22.2  WHAT IS LOGGED
+─────────────────────
+• Every node add, delete, rename, status change, colour change, comment,
+  connection, layout, group creation, and duplication is recorded.
+• Up to 200 entries are kept in memory.
+• Each entry shows: icon, description, and timestamp.
+
+22.3  CLEAR THE LOG
+────────────────────
+• Click "Clear" in the Activity Log panel to wipe the log.
+
+22.4  NODE AUDIT TRAIL
+───────────────────────
+• In the Properties panel, an "Audit" section shows field-level change history
+  for that specific node: what field changed, old value, new value, when.
+
+
+════════════════════════════════════════════════════════════════════════════════
+ SECTION 23 — NODE TEMPLATES
+════════════════════════════════════════════════════════════════════════════════
+
+23.1  OPEN NODE TEMPLATES
+──────────────────────────
+• Tools menu → "Node templates".
+
+23.2  SAVE A NODE AS TEMPLATE
+───────────────────────────────
+• Select a node, then in the Node Templates panel click "Save selected as template".
+• The node (with its metadata, colour, shape, etc.) is saved as a reusable template.
+• Templates are stored in localStorage.
+
+23.3  INSERT A TEMPLATE
+────────────────────────
+• In the Node Templates panel, click a template name.
+• A new node is created as a child of the currently selected node (or root).
+
+23.4  DELETE A TEMPLATE
+────────────────────────
+• Click the × next to a template in the panel.
+
+
+════════════════════════════════════════════════════════════════════════════════
+ SECTION 24 — CONTEXT MENU (RIGHT-CLICK)
+════════════════════════════════════════════════════════════════════════════════
+
+Right-clicking a node opens a context menu with:
+
+  Edit title            — start inline editing
+  Duplicate             — copy node + subtree (offset by 80px)
+  Add child             — add a child node
+  Edit notes            — open the notes panel
+  Set URL               — set/update URL for the node
+  Add dependency edge   — draw a dependency arrow from this node
+  ⏱ Start timer         — start the time tracker on this node
+  ⏹ Stop timer          — (shown instead when timer is active on this node)
+  ↑ Merge into parent   — (shown for non-root nodes) flatten into parent
+  ⇄ Split node          — (shown when ≥2 children) split children into sibling
+  🔒 Lock node          — prevent editing/moving
+  🔓 Unlock node        — (shown when locked)
+  Delete                — delete this node (with confirmation if it has children)
+
+
+════════════════════════════════════════════════════════════════════════════════
+ SECTION 25 — KEYBOARD SHORTCUTS (COMPLETE LIST)
+════════════════════════════════════════════════════════════════════════════════
+
+  NAVIGATION
+  ──────────
+  Arrow Up/Down/Left/Right    Navigate to adjacent nodes
+  Alt + Arrow Left            Navigation history: go back
+  Alt + Arrow Right           Navigation history: go forward
+  F                           Toggle Focus mode (or Fit all when no node selected)
+  Ctrl+F / Ctrl+K             Open search overlay
+  Ctrl+P                      Open command palette
+  Ctrl+G                      Jump to node by Jira key
+
+  EDITING
+  ───────
+  Double-click node           Start editing title
+  Enter (node selected)       Start editing title
+  Enter (while editing)       Save and add sibling
+  Escape                      Cancel editing / close panel / deselect
+  Tab (node selected)         Add a child node
+  Delete / Backspace          Delete selected node, edge, or selection
+  Ctrl+D                      Duplicate node
+  Ctrl+C                      Copy node subtree to clipboard
+  Ctrl+V                      Paste subtree as child (or paste text as tree)
+  Ctrl+Z                      Undo
+  Ctrl+Shift+Z / Ctrl+Y       Redo
+  Ctrl+H                      Find and Replace
+
+  VIEWS & MODES
+  ─────────────
+  P                           Toggle Presentation mode
+  N                           Toggle Notes panel (when node selected)
+  F                           Focus mode (when node selected)
+  ?                           Show keyboard shortcuts modal
+
+  PLATFORM NOTE: On Mac, replace Ctrl with Cmd (⌘) for all shortcuts above.
+
+
+════════════════════════════════════════════════════════════════════════════════
+ SECTION 26 — AUTOSAVE AND PERSISTENCE
+════════════════════════════════════════════════════════════════════════════════
+
+26.1  AUTO-SAVE
+────────────────
+• All changes are saved to localStorage automatically.
+• The top bar shows "Saving…" (grey) followed by "✓ Saved" (green) within ~1
+  second after any change.
+• No manual save button is needed.
+
+26.2  PERSISTENCE
+──────────────────
+• Projects, nodes, and all settings persist across browser refresh.
+• Data is stored per user ID in localStorage.
+• Clearing browser data will erase all projects — use JSON Export to back up.
+
+26.3  MANUAL BACKUP
+────────────────────
+• Export menu → "Export CSV" or "Export SVG" or use the Projects panel
+  "Export" button to download a .json backup.
+• Auto-backup: Tools menu → "Auto-backup every 5min" (see Section 19.10).
+
+
+════════════════════════════════════════════════════════════════════════════════
+ SECTION 27 — TIPS AND BEST PRACTICES
+════════════════════════════════════════════════════════════════════════════════
+
+• Use Tab to rapidly add children while building a tree — no mouse needed.
+• Press Enter after editing to immediately start editing the next sibling.
+• Use Ctrl+C then Ctrl+V to duplicate large subtrees instead of recreating.
+• Paste indented bullet lists from Notion, Word, or any text editor to import
+  structure quickly.
+• Use Focus Mode (F) when presenting a feature to stakeholders — dims everything
+  outside the selected subtree.
+• Set Story Points + Sprint on leaf nodes and use the Velocity Chart to track
+  delivery rate over time.
+• Use the Breadcrumb trail to orient yourself in deep trees without losing place.
+• Bookmark useful filter combinations (e.g. "My tasks this sprint") so you can
+  restore them with one click.
+• Enable Auto-backup if you are doing a lot of work — it protects against
+  accidental localStorage clearing.
+• Use the "Dependency graph only" view before a release to review blockers
+  without tree-edge noise.
+• Lock completed or approved nodes to prevent accidental changes.
+• Use the Resource Heatmap before assigning new work to check who is overloaded.
+• The Sprint Planning view is the fastest way to move work in and out of a sprint.
+• Use Merge into parent to flatten single-child wrappers; use Split to break a
+  large epic into two when it grows too big.
+
+
+════════════════════════════════════════════════════════════════════════════════
+ END OF GUIDE
+================================================================================

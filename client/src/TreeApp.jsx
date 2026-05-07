@@ -1,0 +1,905 @@
+import React, { useState, useEffect, useRef } from 'react'
+import { Link, NavLink, useNavigate, useLocation } from 'react-router-dom'
+import { NAV_LINKS } from './config/navLinks.js'
+import { useAuthModal } from './context/AuthModalContext.jsx'
+import Canvas from './components/canvas/Canvas.jsx'
+import JiraPanel from './components/sidebar/JiraPanel.jsx'
+import ProjectsPanel from './components/projects/ProjectsPanel.jsx'
+import DashboardPanel from './components/projects/DashboardPanel.jsx'
+import MembersPanel from './components/collaboration/MembersPanel.jsx'
+import NotificationBell from './components/notifications/NotificationBell.jsx'
+import TemplatesDialog, { TEMPLATES as ALL_TEMPLATES } from './components/canvas/TemplatesDialog.jsx'
+import OnboardingModal, { STORAGE_KEY as ONBOARDING_KEY } from './components/canvas/OnboardingModal.jsx'
+import GlobalSearchModal from './components/canvas/GlobalSearchModal.jsx'
+import { useProjects } from './hooks/useProjects.js'
+import { useCollaboration } from './hooks/useCollaboration.js'
+import { useNotifications } from './hooks/useNotifications.js'
+import { useAuth } from './context/AuthContext.jsx'
+import { getAuthToken } from './lib/localStorage.js'
+import { trackEvent } from './lib/analyticsApi.js'
+
+export default function TreeApp() {
+  const { user, logout, isGuest } = useAuth()
+  const { openLogin } = useAuthModal()
+
+  // Budget tracker: read quota from settings, compute used points from active project
+  const [sprintQuota, setSprintQuota] = useState(() => {
+    try { return Number(localStorage.getItem(`chart-to-jira-sprint-quota-${user?.id}`) || 0) } catch { return 0 }
+  })
+  // Re-read quota if user navigates back from settings
+  useEffect(() => {
+    function onFocus() {
+      try { setSprintQuota(Number(localStorage.getItem(`chart-to-jira-sprint-quota-${user?.id}`) || 0)) } catch {}
+    }
+    window.addEventListener('focus', onFocus)
+    return () => window.removeEventListener('focus', onFocus)
+  }, [user?.id])
+  const {
+    projects, activeProject, activeMap, activeId,
+    createProject, deleteProject, renameProject, switchProject, importProject,
+    createMindMap, deleteMindMap, renameMindMap, switchMindMap, importMapToProject,
+    addChild, deleteNode, editNode, selectNode, deselect,
+    updateNodeColor, toggleCollapse,
+    moveNode, setShape, addEdge, addDependencyEdge, deleteEdge, applyLayout,
+    duplicateNode, editNodeNotes,
+    undo, redo, canUndo, canRedo, undoStackDepth, redoStackDepth,
+    collapseAll, expandAll, autoColor, setNodeUrl, pasteSubtree, bulkDelete,
+    setNodeMeta, addComment, deleteComment, collapseToDepth, applyJiraKeys, setEdgeType,
+    addGroup, deleteGroup, renameGroup, applyRadialLayout,
+    toggleLock, toggleReaction,
+    reparentNode, setNodeChecklist,
+    addStickyNote,
+    activityLog, clearActivityLog,
+    snapshots, saveSnapshot, restoreSnapshot, deleteSnapshot,
+    setCustomStatuses,
+    addFrame, deleteFrame, renameFrame,
+    setEdgeLabel,
+    setCustomFields,
+    mergeNode,
+    assignNodeKey,
+    splitNode,
+    setCollabSender,
+    applyRemoteAction,
+    shareProject,
+    shareMap,
+    markProjectCollab,
+    loadRemoteProject,
+  } = useProjects(user.id)
+
+  const collab = useCollaboration()
+  const navigate = useNavigate()
+  const location = useLocation()
+
+  useEffect(() => {
+    const { focusNodeId, projectId, mapId } = location.state || {}
+    if (!focusNodeId) return
+    window.history.replaceState({}, '')
+
+    async function applyNavigation() {
+      const token = (() => { try { return localStorage.getItem('chart-to-jira-token') } catch { return null } })()
+      // If projectId is specified and not in local state, fetch it from server first
+      if (projectId) {
+        const existsLocally = projects.some(p => p.id === projectId)
+        if (!existsLocally) {
+          try {
+            const res = await fetch(`/api/projects/${projectId}`, {
+              headers: { Authorization: `Bearer ${token}` },
+            })
+            if (res.ok) {
+              const serverProject = await res.json()
+              loadRemoteProject(serverProject)
+              // loadRemoteProject sets activeId; give React time to settle before switching map
+              await new Promise(r => setTimeout(r, 150))
+            }
+          } catch (_) {}
+        } else {
+          switchProject(projectId)
+        }
+      }
+      if (mapId && projectId) switchMindMap(projectId, mapId)
+      setTimeout(() => selectNode(focusNodeId), 200)
+    }
+
+    applyNavigation()
+  }, [location.state])
+  const notifications = useNotifications(!isGuest ? getAuthToken() : null)
+  const [openPanel, setOpenPanel] = useState(null) // 'projects' | 'jira' | 'dashboard' | 'members' | null
+  const [saveStatus, setSaveStatus] = useState(null) // null | 'saving' | 'saved'
+  const [sharingId, setSharingId] = useState(null) // project currently being shared
+  const [showAppTemplates, setShowAppTemplates] = useState(false)
+  // When set to a projectId, template selection adds a map to that project instead of creating a new project
+  const [templateProjectTarget, setTemplateProjectTarget] = useState(null)
+  const [showOnboarding, setShowOnboarding] = useState(() => {
+    try { return !localStorage.getItem(ONBOARDING_KEY) } catch { return false }
+  })
+  const [showGlobalSearch, setShowGlobalSearch] = useState(false)
+
+  // Canvas data comes from the active map; project metadata stays in activeProject
+  const state = activeMap
+
+  // Active collab: map-level takes precedence over project-level
+  const activeCollab = activeMap?.collab || activeProject?.collab
+  const activeRoomId = activeCollab?.id || null
+
+  // Wire collab sender: broadcast actions when in a collab room
+  useEffect(() => {
+    if (activeCollab) {
+      setCollabSender((action, s) => collab.sendAction(action, s))
+    } else {
+      setCollabSender(null)
+    }
+  }, [activeCollab])
+
+  // Join/leave collab room when active project/map or collab state changes
+  useEffect(() => {
+    if (!activeRoomId) {
+      collab.leaveProject()
+      return
+    }
+    const token = getAuthToken()
+    if (!token) return
+    collab.joinProject(activeRoomId, token)
+  }, [activeId, activeRoomId])
+
+  // Wire remote actions from collab to useProjects
+  useEffect(() => {
+    collab.setRemoteActionCallback((action) => {
+      if (activeRoomId) applyRemoteAction(activeRoomId, action)
+    })
+  }, [activeId, activeRoomId, applyRemoteAction])
+
+  useEffect(() => {
+    if (!activeProject?.updatedAt) return
+    setSaveStatus('saving')
+    const t1 = setTimeout(() => setSaveStatus('saved'), 400)
+    const t2 = setTimeout(() => setSaveStatus(null), 2400)
+    return () => { clearTimeout(t1); clearTimeout(t2) }
+  }, [activeProject?.updatedAt])
+
+  function togglePanel(name) {
+    setOpenPanel(p => p === name ? null : name)
+    trackEvent('feature_used', name === 'jira' ? 'jira_panel' : name === 'members' ? 'collab_panel' : name === 'dashboard' ? 'dashboard_panel' : name, user?.id, isGuest)
+  }
+
+  async function handleShareProject(projectId) {
+    // Toggle closed if already open
+    if (openPanel === 'members') { setOpenPanel(null); return }
+    const project = projects.find(p => p.id === projectId)
+    if (!project) return
+    const authToken = getAuthToken()
+    if (!authToken) {
+      alert('You must be signed in to share projects.')
+      return
+    }
+    // Always sync to server (idempotent — safe to call even if already shared)
+    const { ok, error } = await shareProject(projectId, authToken)
+    if (ok) {
+      trackEvent('feature_used', 'collab_project_share', user?.id, isGuest)
+      if (projectId !== activeId) switchProject(projectId)
+      setOpenPanel('members')
+    } else {
+      alert(`Could not share project: ${error}`)
+    }
+  }
+
+  async function handleShareMap(projectId, mapId) {
+    if (openPanel === 'members') { setOpenPanel(null); return }
+    const authToken = getAuthToken()
+    if (!authToken) {
+      alert('You must be signed in to share.')
+      return
+    }
+    const { ok, error } = await shareMap(projectId, mapId, authToken)
+    if (ok) {
+      if (projectId !== activeId) switchProject(projectId)
+      setOpenPanel('members')
+    } else {
+      alert(`Could not share map: ${error}`)
+    }
+  }
+
+  useEffect(() => {
+    function onKey(e) {
+      if (e.key === 'Escape') setOpenPanel(null)
+      // ⌘K or Ctrl+K opens global search
+      if ((e.metaKey || e.ctrlKey) && e.key === 'k') {
+        e.preventDefault()
+        setShowGlobalSearch(s => !s)
+      }
+    }
+    window.addEventListener('keydown', onKey)
+    return () => window.removeEventListener('keydown', onKey)
+  }, [])
+
+  // Apply template chosen on the /templates landing page
+  useEffect(() => {
+    const pendingId = sessionStorage.getItem('bahn_pending_template')
+    if (!pendingId) return
+    sessionStorage.removeItem('bahn_pending_template')
+    const template = ALL_TEMPLATES.find(t => t.id === pendingId)
+    if (!template) return
+    const treeData = template.build()
+    importProject({ ...treeData, name: template.name })
+  }, []) // eslint-disable-line react-hooks/exhaustive-deps
+
+  // Handle JQL import events from JiraPanel
+  useEffect(() => {
+    function onJiraImport(e) {
+      const { issues } = e.detail
+      if (!issues?.length || !state) return
+      // Create nodes from issues as children of root
+      for (const issue of issues) {
+        // We'll dispatch addChild then editNode + setNodeMeta in sequence
+        // Simple approach: just show alert with import instructions
+      }
+      // For now, create project from imported issues using importProject
+      const p = state
+      const newNodes = { ...p.nodes }
+      for (const issue of issues) {
+        const id = crypto.randomUUID()
+        newNodes[id] = {
+          id, title: issue.summary, parentId: p.rootId, childIds: [],
+          depth: 1, color: null, collapsed: false, x: 0, y: 0, shape: 'rect',
+          jiraKey: issue.key,
+          status: issue.status ? normalizeStatus(issue.status) : null,
+          issueType: issue.issueType ? issue.issueType.toLowerCase() : null,
+          assignee: issue.assignee || null,
+          priority: issue.priority ? normalizePriority(issue.priority) : null,
+          tags: [], comments: [], notes: null, url: null,
+          storyPoints: null, dueDate: null, sprint: null,
+        }
+        if (newNodes[p.rootId]) {
+          newNodes[p.rootId] = { ...newNodes[p.rootId], childIds: [...newNodes[p.rootId].childIds, id] }
+        }
+      }
+      // Import as new project version by dispatching bulkUpdate
+      importProject({ ...p, nodes: newNodes, name: activeProject?.name || 'Imported from Jira' })
+    }
+
+    window.addEventListener('jira-import-nodes', onJiraImport)
+    return () => window.removeEventListener('jira-import-nodes', onJiraImport)
+  }, [state, importProject])
+
+  function normalizeStatus(s) {
+    const lower = s.toLowerCase()
+    if (lower.includes('done') || lower.includes('closed') || lower.includes('resolved')) return 'done'
+    if (lower.includes('progress') || lower.includes('review') || lower.includes('testing')) return 'in-progress'
+    if (lower.includes('block')) return 'blocked'
+    return 'todo'
+  }
+
+  function normalizePriority(p) {
+    const lower = p.toLowerCase()
+    if (lower === 'highest' || lower === 'blocker') return 'critical'
+    if (lower === 'high') return 'high'
+    if (lower === 'medium') return 'medium'
+    if (lower === 'low' || lower === 'lowest' || lower === 'trivial') return 'low'
+    return null
+  }
+
+  function handleGlobalSearchNavigate(projectId, mapId, nodeId) {
+    switchProject(projectId)
+    switchMindMap(projectId, mapId)
+    setTimeout(() => selectNode(nodeId), 50)
+  }
+
+  return (
+    <div className="flex flex-col h-screen w-screen overflow-hidden">
+      {/* ── App header ───────────────────────────────────────────────── */}
+      <header style={{
+        height: 56, display: 'flex', alignItems: 'center',
+        background: '#172B4D', borderBottom: '1px solid rgba(255,255,255,0.08)',
+        padding: '0 20px', flexShrink: 0, zIndex: 10,
+      }}>
+        <div style={{ width: '100%', display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 8 }}>
+
+        {/* ── LEFT: logo + page nav + project breadcrumb ───────────── */}
+        <div style={{ display: 'flex', alignItems: 'center', gap: 0, minWidth: 0 }}>
+          {/* Logo */}
+          <Link to="/" style={{ display: 'flex', alignItems: 'center', gap: 7, textDecoration: 'none', padding: '0 10px 0 4px', flexShrink: 0 }}>
+            <svg width="28" height="28" viewBox="0 0 30 30" fill="none">
+              <circle cx="10" cy="15" r="9" fill="#0052CC" opacity="0.9"/>
+              <circle cx="20" cy="15" r="9" fill="#4C9AFF" opacity="0.85"/>
+            </svg>
+            <span style={{ fontWeight: 700, fontSize: '1.0625rem', color: '#fff', letterSpacing: '-0.01em' }}>
+              bahnOS
+            </span>
+          </Link>
+
+          <span style={{ width: 1, height: 18, background: 'rgba(255,255,255,0.18)', margin: '0 6px', flexShrink: 0 }} />
+
+          {/* Page nav links */}
+          {NAV_LINKS.map(({ to, label }) => (
+            <NavLink
+              key={to}
+              to={to}
+              style={({ isActive }) => ({
+                fontSize: '0.8125rem', fontWeight: 500, textDecoration: 'none',
+                padding: '5px 10px', borderRadius: 5, flexShrink: 0,
+                color: isActive ? '#fff' : 'rgba(255,255,255,0.55)',
+                background: isActive ? 'rgba(255,255,255,0.1)' : 'transparent',
+                transition: 'background 0.15s, color 0.15s',
+              })}
+              onMouseEnter={e => { if (!e.currentTarget.dataset.active) e.currentTarget.style.background = 'rgba(255,255,255,0.07)'; e.currentTarget.style.color = '#fff' }}
+              onMouseLeave={e => { const active = e.currentTarget.getAttribute('aria-current') === 'page'; e.currentTarget.style.background = active ? 'rgba(255,255,255,0.1)' : 'transparent'; e.currentTarget.style.color = active ? '#fff' : 'rgba(255,255,255,0.55)' }}
+            >
+              {label}
+            </NavLink>
+          ))}
+
+          <span style={{ width: 1, height: 18, background: 'rgba(255,255,255,0.18)', margin: '0 6px', flexShrink: 0 }} />
+
+          {/* Project breadcrumb — click opens Projects panel */}
+          <button
+            onClick={() => togglePanel('projects')}
+            style={{
+              display: 'flex', alignItems: 'center', gap: 5,
+              background: openPanel === 'projects' ? 'rgba(255,255,255,0.12)' : 'transparent',
+              border: 'none', borderRadius: 4, cursor: 'pointer',
+              padding: '4px 8px', maxWidth: 220, flexShrink: 1,
+            }}
+            onMouseEnter={e => { if (openPanel !== 'projects') e.currentTarget.style.background = 'rgba(255,255,255,0.07)' }}
+            onMouseLeave={e => { if (openPanel !== 'projects') e.currentTarget.style.background = 'transparent' }}
+          >
+            <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="rgba(255,255,255,0.5)" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+              <path d="M22 19a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h5l2 3h9a2 2 0 0 1 2 2z"/>
+            </svg>
+            <span style={{ fontSize: '0.8125rem', fontWeight: 500, color: activeProject ? '#fff' : 'rgba(255,255,255,0.45)', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+              {activeProject ? activeProject.name : 'No project'}
+            </span>
+            {activeMap && activeProject?.maps && Object.keys(activeProject.maps).length > 1 && (
+              <>
+                <span style={{ color: 'rgba(255,255,255,0.25)', fontSize: '0.75rem', flexShrink: 0 }}>/</span>
+                <span style={{ fontSize: '0.75rem', color: 'rgba(255,255,255,0.6)', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', maxWidth: 90 }}>
+                  {activeMap.name}
+                </span>
+              </>
+            )}
+            <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="rgba(255,255,255,0.4)" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" style={{ flexShrink: 0 }}>
+              <polyline points="6 9 12 15 18 9"/>
+            </svg>
+          </button>
+        </div>
+
+        {/* ── RIGHT: tools + user ──────────────────────────────────── */}
+        <div style={{ display: 'flex', alignItems: 'center', gap: 4, flexShrink: 0 }}>
+          {/* Global search */}
+          <button
+            onClick={() => setShowGlobalSearch(true)}
+            title="Global search (⌘K)"
+            style={{
+              display: 'flex', alignItems: 'center', gap: 5,
+              padding: '5px 10px', borderRadius: 6,
+              background: 'rgba(255,255,255,0.07)', border: '1px solid rgba(255,255,255,0.12)',
+              color: 'rgba(255,255,255,0.55)', cursor: 'pointer', fontSize: '0.8rem',
+              whiteSpace: 'nowrap',
+            }}
+            onMouseEnter={e => { e.currentTarget.style.background = 'rgba(255,255,255,0.12)'; e.currentTarget.style.color = '#fff' }}
+            onMouseLeave={e => { e.currentTarget.style.background = 'rgba(255,255,255,0.07)'; e.currentTarget.style.color = 'rgba(255,255,255,0.55)' }}
+          >
+            <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+              <circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/>
+            </svg>
+            <span>Search</span>
+            <kbd style={{ fontSize: 10, opacity: 0.6, border: '1px solid rgba(255,255,255,0.2)', borderRadius: 3, padding: '0 4px', background: 'rgba(0,0,0,0.2)' }}>⌘K</kbd>
+          </button>
+
+          {/* CRM */}
+          <AppNavBtn onClick={() => navigate('/crm')} title="CRM Pipeline">
+            <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><line x1="23" y1="11" x2="17" y2="11"/><line x1="20" y1="8" x2="20" y2="14"/></svg>
+            CRM
+          </AppNavBtn>
+
+          {/* Jira */}
+          <AppNavBtn
+            active={openPanel === 'jira'}
+            onClick={() => togglePanel('jira')}
+            disabled={!state}
+            accent
+          >
+            <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71"/><path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71"/></svg>
+            Jira
+          </AppNavBtn>
+
+          {/* Share / Collab */}
+          {state && (
+            <AppNavBtn
+              active={openPanel === 'members' || !!activeCollab}
+              onClick={() => handleShareProject(activeId)}
+              title={activeCollab ? 'Manage collaborators' : 'Share for real-time collaboration'}
+            >
+              {activeCollab ? (
+                <>
+                  <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg>
+                  Collab
+                  {collab.connected && <span style={{ width: 6, height: 6, borderRadius: '50%', background: '#36B37E', flexShrink: 0 }} />}
+                </>
+              ) : (
+                <>
+                  <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><circle cx="18" cy="5" r="3"/><circle cx="6" cy="12" r="3"/><circle cx="18" cy="19" r="3"/><line x1="8.59" y1="13.51" x2="15.42" y2="17.49"/><line x1="15.41" y1="6.51" x2="8.59" y2="10.49"/></svg>
+                  Share
+                </>
+              )}
+            </AppNavBtn>
+          )}
+
+          <span style={{ width: 1, height: 18, background: 'rgba(255,255,255,0.12)', margin: '0 4px', flexShrink: 0 }} />
+
+          {!isGuest && (
+            <NotificationBell
+              invites={notifications.invites}
+              onAccept={notifications.acceptInvite}
+              onDecline={notifications.declineInvite}
+              onProjectJoined={(projectData) => { if (projectData) loadRemoteProject(projectData) }}
+            />
+          )}
+
+          {isGuest ? (
+            <button onClick={openLogin} style={{ fontSize: 12, fontWeight: 600, color: '#fff', background: 'rgba(255,255,255,0.15)', border: '1px solid rgba(255,255,255,0.25)', borderRadius: 4, padding: '4px 10px', cursor: 'pointer', flexShrink: 0 }}>
+              Sign in
+            </button>
+          ) : (
+            user && <UserMenu user={user} logout={logout} />
+          )}
+        </div>
+        </div>
+      </header>
+
+      <div className="flex flex-1 overflow-hidden relative">
+        {state ? (
+          <Canvas
+            projectId={activeId}
+            treeState={state}
+            onAddChild={addChild}
+            onDeleteNode={deleteNode}
+            onSelectNode={selectNode}
+            onDeselect={deselect}
+            onEditNode={editNode}
+            onColorChange={updateNodeColor}
+            onSetShape={setShape}
+            onToggleCollapse={toggleCollapse}
+            onMoveNode={moveNode}
+            onAddEdge={addEdge}
+            onAddDependencyEdge={addDependencyEdge}
+            onDeleteEdge={deleteEdge}
+            onApplyLayout={() => { applyLayout(); trackEvent('feature_used', 'auto_layout', user?.id, isGuest) }}
+            onDuplicateNode={duplicateNode}
+            onUndo={undo}
+            onRedo={redo}
+            canUndo={canUndo}
+            canRedo={canRedo}
+            undoStackDepth={undoStackDepth}
+            redoStackDepth={redoStackDepth}
+            onEditNotes={editNodeNotes}
+            onCollapseAll={collapseAll}
+            onExpandAll={expandAll}
+            onAutoColor={autoColor}
+            onSetNodeUrl={setNodeUrl}
+            onPasteSubtree={pasteSubtree}
+            onBulkDelete={bulkDelete}
+            onSetNodeMeta={setNodeMeta}
+            onAddComment={addComment}
+            onDeleteComment={deleteComment}
+            onCollapseToDepth={collapseToDepth}
+            onApplyJiraKeys={applyJiraKeys}
+            onSetEdgeType={setEdgeType}
+            onAddGroup={addGroup}
+            onDeleteGroup={deleteGroup}
+            onRenameGroup={renameGroup}
+            onApplyRadialLayout={() => { applyRadialLayout(); trackEvent('feature_used', 'radial_layout', user?.id, isGuest) }}
+            onToggleLock={toggleLock}
+            onToggleReaction={toggleReaction}
+            onReparentNode={reparentNode}
+            onSetNodeChecklist={setNodeChecklist}
+            onAddStickyNote={addStickyNote}
+            onSetEdgeLabel={setEdgeLabel}
+            projects={projects}
+            onSwitchProject={switchProject}
+            activityLog={activityLog}
+            onClearActivityLog={clearActivityLog}
+            snapshots={snapshots}
+            onSaveSnapshot={saveSnapshot}
+            onRestoreSnapshot={restoreSnapshot}
+            onDeleteSnapshot={deleteSnapshot}
+            onImportTemplate={(treeData, name) => {
+              importProject({ ...treeData, name })
+            }}
+            currentUser={user?.email}
+            customStatuses={state?.customStatuses ?? []}
+            onSetCustomStatuses={setCustomStatuses}
+            customFields={state?.customFields ?? []}
+            onSetCustomFields={setCustomFields}
+            onMergeNode={mergeNode}
+            onSplitNode={splitNode}
+            frames={state?.frames ?? []}
+            onAddFrame={addFrame}
+            onDeleteFrame={deleteFrame}
+            onRenameFrame={renameFrame}
+            myRole={collab.connected ? collab.myRole : null}
+            presence={collab.presence}
+            onSendCursor={collab.connected ? collab.sendCursor : undefined}
+            onTrackEvent={(feature) => trackEvent('feature_used', feature, user?.id, isGuest)}
+            onAssignNodeKey={assignNodeKey}
+          />
+        ) : (
+          <WelcomeScreen
+            onCreateBlank={() => {
+              const id = createProject('New Project')
+              switchProject(id)
+            }}
+            onOpenTemplates={() => setShowAppTemplates(true)}
+          />
+        )}
+
+        {/* Backdrop — clicking outside panel closes it */}
+        {openPanel && (
+          <div className="absolute inset-0 z-20" onClick={() => setOpenPanel(null)} />
+        )}
+
+        {/* Projects overlay */}
+        {openPanel === 'projects' && (
+          <div
+            className="absolute top-0 left-0 h-full z-30"
+            onClick={e => e.stopPropagation()}
+          >
+            <ProjectsPanel
+              projects={projects}
+              activeId={activeId}
+              activeMapId={activeProject?.activeMapId}
+              onSwitch={switchProject}
+              onCreate={createProject}
+              onRename={renameProject}
+              onDelete={deleteProject}
+              onClose={() => setOpenPanel(null)}
+              onShare={handleShareProject}
+              onShareMap={handleShareMap}
+              onFromTemplate={() => { setOpenPanel(null); setShowAppTemplates(true) }}
+              onCreateMap={(projectId) => createMindMap(projectId)}
+              onCreateMapFromTemplate={(projectId) => {
+                setTemplateProjectTarget(projectId)
+                setShowAppTemplates(true)
+              }}
+              onDeleteMap={deleteMindMap}
+              onRenameMap={renameMindMap}
+              onSwitchMap={(projectId, mapId) => { switchProject(projectId); switchMindMap(projectId, mapId) }}
+              onExport={(projectId) => {
+                const project = projects.find(p => p.id === projectId)
+                if (!project) return
+                const blob = new Blob([JSON.stringify(project, null, 2)], { type: 'application/json' })
+                const a = document.createElement('a')
+                a.href = URL.createObjectURL(blob)
+                a.download = `${project.name.replace(/\s+/g, '-')}.json`
+                a.click()
+                URL.revokeObjectURL(a.href)
+              }}
+              onImport={(data) => {
+                if (!data?.maps && (!data?.nodes || !data?.rootId)) { alert('Invalid project file'); return }
+                importProject(data)
+              }}
+            />
+          </div>
+        )}
+
+        {/* Dashboard overlay */}
+        {openPanel === 'dashboard' && (
+          <div
+            className="absolute top-0 left-0 h-full z-30"
+            onClick={e => e.stopPropagation()}
+          >
+            <DashboardPanel
+              projects={projects}
+              activeId={activeId}
+              onSwitch={switchProject}
+              onClose={() => setOpenPanel(null)}
+              onFromTemplate={() => { setOpenPanel(null); setShowAppTemplates(true) }}
+            />
+          </div>
+        )}
+
+        {/* Jira overlay */}
+        {openPanel === 'jira' && state && (
+          <JiraPanel
+            treeState={state}
+            userId={user?.id}
+            onClose={() => setOpenPanel(null)}
+            onApplyJiraKeys={applyJiraKeys}
+          />
+        )}
+
+        {/* Members / Collaborators dialog */}
+        {openPanel === 'members' && activeCollab && (
+          <MembersPanel
+            projectId={activeRoomId || activeId}
+            myRole={collab.myRole || activeCollab.role}
+            token={getAuthToken()}
+            onClose={() => setOpenPanel(null)}
+            mapCount={activeProject?.collab
+              ? Object.keys(activeProject.maps || {}).length
+              : activeMap?.collab ? 1 : 0}
+          />
+        )}
+      </div>
+
+      {/* App-level Templates Dialog */}
+      {showAppTemplates && (
+        <TemplatesDialog
+          mode={templateProjectTarget ? 'map' : 'project'}
+          onSelect={(template) => {
+            const treeData = template.build()
+            if (templateProjectTarget) {
+              // Add as a new map inside the target project
+              importMapToProject(templateProjectTarget, treeData, template.name)
+              switchProject(templateProjectTarget)
+            } else {
+              // Create a new project
+              importProject({ ...treeData, name: template.name })
+            }
+            setShowAppTemplates(false)
+            setTemplateProjectTarget(null)
+          }}
+          onClose={() => { setShowAppTemplates(false); setTemplateProjectTarget(null) }}
+        />
+      )}
+      {/* Onboarding modal — shown only on first visit */}
+      {showOnboarding && (
+        <OnboardingModal onDone={() => setShowOnboarding(false)} />
+      )}
+
+      {/* Global search modal — ⌘K */}
+      {showGlobalSearch && (
+        <GlobalSearchModal
+          projects={projects}
+          onNavigate={handleGlobalSearchNavigate}
+          onClose={() => setShowGlobalSearch(false)}
+        />
+      )}
+    </div>
+  )
+}
+
+function UserMenu({ user, logout }) {
+  const navigate = useNavigate()
+  const [open, setOpen] = useState(false)
+  const ref = useRef(null)
+  const initials = user.email.slice(0, 2).toUpperCase()
+
+  useEffect(() => {
+    if (!open) return
+    function handler(e) {
+      if (ref.current && !ref.current.contains(e.target)) setOpen(false)
+    }
+    document.addEventListener('mousedown', handler)
+    return () => document.removeEventListener('mousedown', handler)
+  }, [open])
+
+  return (
+    <div ref={ref} style={{ position: 'relative' }}>
+      <button onClick={() => setOpen(v => !v)} style={{
+        width: 32, height: 32, borderRadius: '50%', background: '#0052CC',
+        color: '#fff', border: open ? '2px solid #4C9AFF' : '2px solid rgba(255,255,255,0.3)',
+        cursor: 'pointer', fontWeight: 700, fontSize: '0.75rem',
+        display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0,
+        overflow: 'hidden', padding: 0,
+      }}>
+        {user.avatar
+          ? <img src={user.avatar} alt="avatar" style={{ width: '100%', height: '100%', objectFit: 'cover', borderRadius: '50%' }} />
+          : initials
+        }
+      </button>
+      {open && (
+        <div style={{
+          position: 'absolute', top: 'calc(100% + 6px)', right: 0,
+          background: '#fff', border: '1px solid #DFE1E6', borderRadius: 3,
+          boxShadow: '0 4px 8px rgba(9,30,66,0.25)', minWidth: 190, zIndex: 200, overflow: 'hidden',
+        }}>
+          <div style={{ padding: '10px 14px', borderBottom: '1px solid #DFE1E6', background: '#FAFBFC', display: 'flex', alignItems: 'center', gap: 10 }}>
+            <div style={{ width: 36, height: 36, borderRadius: '50%', overflow: 'hidden', background: '#0052CC', flexShrink: 0, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+              {user.avatar
+                ? <img src={user.avatar} alt="avatar" style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
+                : <span style={{ color: '#fff', fontWeight: 700, fontSize: '0.8125rem' }}>{initials}</span>
+              }
+            </div>
+            <div style={{ minWidth: 0 }}>
+            <p style={{ fontSize: '0.8125rem', fontWeight: 600, color: '#172B4D', margin: 0, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+              {user.email}
+            </p>
+            <p style={{ fontSize: '0.75rem', color: '#5E6C84', margin: '2px 0 0' }}>bahnOS account</p>
+            </div>
+          </div>
+          {[
+            { label: 'Home', onClick: () => { navigate('/'); setOpen(false) } },
+            { label: 'CRM Pipeline', onClick: () => { navigate('/crm'); setOpen(false) }, crm: true },
+            { label: 'Profile & Settings', onClick: () => { navigate('/settings'); setOpen(false) } },
+            ...(user.isAdmin ? [{ label: '⚙ Admin Panel', onClick: () => { navigate('/admin'); setOpen(false) }, admin: true }] : []),
+          ].map(({ label, onClick, admin, crm }) => (
+            <button key={label} onClick={onClick} style={{
+              display: 'block', width: '100%', padding: '10px 16px', background: 'none',
+              border: 'none', cursor: 'pointer', textAlign: 'left',
+              fontSize: '0.875rem',
+              color: admin ? '#0052CC' : crm ? '#00875A' : '#172B4D',
+              fontWeight: (admin || crm) ? 600 : 'normal',
+            }}
+              onMouseEnter={e => { e.currentTarget.style.background = admin ? '#EAF0FB' : crm ? '#E3FCEF' : '#F4F5F7' }}
+              onMouseLeave={e => { e.currentTarget.style.background = 'none' }}
+            >
+              {label}
+            </button>
+          ))}
+          <div style={{ height: 1, background: '#DFE1E6' }} />
+          <button onClick={() => { logout(); navigate('/'); setOpen(false) }} style={{
+            display: 'block', width: '100%', padding: '10px 16px', background: 'none',
+            border: 'none', cursor: 'pointer', textAlign: 'left',
+            fontSize: '0.875rem', color: '#DE350B',
+          }}
+            onMouseEnter={e => { e.currentTarget.style.background = '#FFEBE6' }}
+            onMouseLeave={e => { e.currentTarget.style.background = 'none' }}
+          >
+            Sign out
+          </button>
+        </div>
+      )}
+    </div>
+  )
+}
+
+function AppNavBtn({ active, onClick, disabled, accent, title, children }) {
+  return (
+    <button
+      onClick={onClick}
+      disabled={disabled}
+      title={title}
+      style={{
+        display: 'flex', alignItems: 'center', gap: 5,
+        padding: active && !accent ? '5px 10px 3px' : '5px 10px',
+        borderRadius: 4, border: 'none',
+        borderBottom: active && !accent ? '2px solid #4C9AFF' : '2px solid transparent',
+        cursor: disabled ? 'default' : 'pointer',
+        fontSize: '0.8125rem', fontWeight: 500,
+        color: disabled
+          ? 'rgba(255,255,255,0.2)'
+          : active
+            ? '#fff'
+            : 'rgba(255,255,255,0.65)',
+        background: active && accent ? '#0052CC' : 'transparent',
+        transition: 'background 0.12s, color 0.12s, border-color 0.12s',
+      }}
+      onMouseEnter={e => {
+        if (!disabled && !active) {
+          e.currentTarget.style.background = 'rgba(255,255,255,0.08)'
+          e.currentTarget.style.color = '#fff'
+        }
+      }}
+      onMouseLeave={e => {
+        if (!disabled && !active) {
+          e.currentTarget.style.background = 'transparent'
+          e.currentTarget.style.color = 'rgba(255,255,255,0.65)'
+        }
+      }}
+    >
+      {children}
+    </button>
+  )
+}
+
+// ─── QUICK TEMPLATES shown on welcome screen ──────────────────────────────────
+const QUICK_TEMPLATES = [
+  { id: 'sprint',     icon: '🏃', name: 'Sprint Planning',   cat: 'Engineering' },
+  { id: 'roadmap',    icon: '🗺️', name: 'Product Roadmap',   cat: 'Product'     },
+  { id: 'retro',      icon: '🔄', name: 'Retrospective',     cat: 'Team'        },
+  { id: 'okr',        icon: '🎯', name: 'OKR Planning',      cat: 'Product'     },
+  { id: 'feature',    icon: '✨', name: 'Feature Breakdown', cat: 'Engineering' },
+  { id: 'swot',       icon: '🔬', name: 'SWOT Analysis',     cat: 'Strategy'    },
+]
+
+function WelcomeScreen({ onCreateBlank, onOpenTemplates }) {
+  return (
+    <div style={{
+      flex: 1, display: 'flex', alignItems: 'center', justifyContent: 'center',
+      background: '#F8F9FA', overflow: 'auto',
+    }}>
+      <div style={{ width: '100%', maxWidth: 680, padding: '48px 24px', textAlign: 'center' }}>
+
+        {/* Logo mark */}
+        <div style={{ marginBottom: 20 }}>
+          <svg width="40" height="40" viewBox="0 0 30 30" fill="none">
+            <circle cx="10" cy="15" r="9" fill="#0052CC" opacity="0.9"/>
+            <circle cx="20" cy="15" r="9" fill="#4C9AFF" opacity="0.85"/>
+          </svg>
+        </div>
+
+        <h1 style={{ fontSize: 26, fontWeight: 700, color: '#172B4D', margin: '0 0 8px', letterSpacing: '-0.02em' }}>
+          Start a new project
+        </h1>
+        <p style={{ fontSize: 14, color: '#626F86', margin: '0 0 40px', lineHeight: 1.6 }}>
+          Pick a template or start from scratch — every node syncs to Jira with one click.
+        </p>
+
+        {/* Two primary actions */}
+        <div style={{ display: 'flex', gap: 12, justifyContent: 'center', marginBottom: 40 }}>
+          <button
+            onClick={onCreateBlank}
+            style={{
+              display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center',
+              gap: 8, padding: '20px 28px', borderRadius: 10,
+              border: '1.5px dashed #C1C7D0', background: '#fff',
+              cursor: 'pointer', minWidth: 140,
+              transition: 'border-color 0.12s, box-shadow 0.12s',
+            }}
+            onMouseEnter={e => { e.currentTarget.style.borderColor = '#4C9AFF'; e.currentTarget.style.boxShadow = '0 4px 14px rgba(0,82,204,0.1)' }}
+            onMouseLeave={e => { e.currentTarget.style.borderColor = '#C1C7D0'; e.currentTarget.style.boxShadow = 'none' }}
+          >
+            <span style={{ fontSize: 26 }}>＋</span>
+            <span style={{ fontSize: 13, fontWeight: 600, color: '#172B4D' }}>Blank project</span>
+            <span style={{ fontSize: 11, color: '#8590A2' }}>Start from scratch</span>
+          </button>
+
+          <button
+            onClick={onOpenTemplates}
+            style={{
+              display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center',
+              gap: 8, padding: '20px 28px', borderRadius: 10,
+              border: '1.5px solid #0052CC', background: '#DEEBFF',
+              cursor: 'pointer', minWidth: 140,
+              transition: 'background 0.12s, box-shadow 0.12s',
+            }}
+            onMouseEnter={e => { e.currentTarget.style.background = '#B3D4FF'; e.currentTarget.style.boxShadow = '0 4px 14px rgba(0,82,204,0.15)' }}
+            onMouseLeave={e => { e.currentTarget.style.background = '#DEEBFF'; e.currentTarget.style.boxShadow = 'none' }}
+          >
+            <span style={{ fontSize: 26 }}>📐</span>
+            <span style={{ fontSize: 13, fontWeight: 600, color: '#0052CC' }}>Browse templates</span>
+            <span style={{ fontSize: 11, color: '#0065FF' }}>19 ready-made structures</span>
+          </button>
+        </div>
+
+        {/* Quick template grid */}
+        <div style={{ marginBottom: 16 }}>
+          <p style={{ fontSize: 11, fontWeight: 700, color: '#8590A2', textTransform: 'uppercase', letterSpacing: '0.07em', marginBottom: 12 }}>
+            Popular templates
+          </p>
+          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: 8 }}>
+            {QUICK_TEMPLATES.map(t => (
+              <QuickTemplateCard key={t.id} template={t} onOpenTemplates={onOpenTemplates} />
+            ))}
+          </div>
+        </div>
+
+        <button
+          onClick={onOpenTemplates}
+          style={{ fontSize: 12, color: '#0052CC', background: 'none', border: 'none', cursor: 'pointer', fontWeight: 500, padding: '4px 0' }}
+          onMouseEnter={e => { e.currentTarget.style.textDecoration = 'underline' }}
+          onMouseLeave={e => { e.currentTarget.style.textDecoration = 'none' }}
+        >
+          Browse all 19 templates →
+        </button>
+      </div>
+    </div>
+  )
+}
+
+function QuickTemplateCard({ template: t, onOpenTemplates }) {
+  const [hovered, setHovered] = useState(false)
+  return (
+    <button
+      onClick={onOpenTemplates}
+      onMouseEnter={() => setHovered(true)}
+      onMouseLeave={() => setHovered(false)}
+      style={{
+        display: 'flex', alignItems: 'center', gap: 10,
+        padding: '10px 12px', borderRadius: 8, textAlign: 'left',
+        border: hovered ? '1.5px solid #4C9AFF' : '1.5px solid #E8EAED',
+        background: hovered ? '#EFF6FF' : '#fff',
+        cursor: 'pointer',
+        transition: 'border-color 0.1s, background 0.1s',
+      }}
+    >
+      <span style={{ fontSize: 18, flexShrink: 0 }}>{t.icon}</span>
+      <div style={{ minWidth: 0 }}>
+        <div style={{ fontSize: 12, fontWeight: 600, color: hovered ? '#0052CC' : '#172B4D', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
+          {t.name}
+        </div>
+        <div style={{ fontSize: 10, color: '#8590A2', marginTop: 1 }}>{t.cat}</div>
+      </div>
+    </button>
+  )
+}
+
