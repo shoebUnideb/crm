@@ -136,7 +136,7 @@ export default function TemplatesPage() {
   function handleUseTemplate(templateId) {
     sessionStorage.setItem('bahn_pending_template', templateId)
     if (isAuthenticated || isGuest) {
-      navigate('/app')
+      navigate('/canvas')
     } else {
       openLogin()
     }

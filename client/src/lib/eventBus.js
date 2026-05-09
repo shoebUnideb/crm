@@ -18,8 +18,8 @@ export const eventBus = {
 }
 
 export const EVENTS = {
-  CRM_DEAL_LINKED: 'crm:deal_linked',
-  CRM_DEAL_UNLINKED: 'crm:deal_unlinked',
+  LINK_CREATED: 'link:created',
+  LINK_DELETED: 'link:deleted',
   NODE_LINKS_CHANGED: 'node:links_changed',
   NODE_DELETED: 'node:deleted',
   GRAPH_OVERLAY_INVALIDATED: 'graph:overlay_invalidated',

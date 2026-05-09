@@ -3,6 +3,7 @@ import { useNavigate, useLocation } from 'react-router-dom'
 import { crmApi } from '../lib/crmApi.js'
 import { linksApi } from '../lib/linksApi.js'
 import { eventBus, EVENTS } from '../lib/eventBus.js'
+import ProductSwitcher from '../components/shared/ProductSwitcher.jsx'
 
 // ── Constants ──────────────────────────────────────────────────────────────────
 const STAGES = [
@@ -431,11 +432,11 @@ export default function CRMPage() {
         target_type: 'crm_deal', target_id: String(deal.id),
         relation: 'linked_to', project_id: targetProjId,
       }).catch(() => {})
-      eventBus.emit(EVENTS.CRM_DEAL_LINKED, { nodeId, dealId: deal.id })
+      eventBus.emit(EVENTS.LINK_CREATED, { nodeId, dealId: deal.id })
       setDeals(ds => ds.map(d => d.id === deal.id ? updated : d))
       if (panelDeal?.id === deal.id) setPanelDeal(updated)
       setCanvasPicker(null)
-      navigate('/app', { state: { focusNodeId: nodeId, projectId: targetProjId, mapId: targetMapId } })
+      navigate('/canvas', { state: { focusNodeId: nodeId, projectId: targetProjId, mapId: targetMapId } })
     } catch (e) {
       setCpError(e.message || 'Failed to create node')
     } finally {
@@ -458,7 +459,7 @@ export default function CRMPage() {
       })
       setDeals(ds => ds.map(d => d.id === deal.id ? updated : d))
       if (panelDeal?.id === deal.id) setPanelDeal(updated)
-      eventBus.emit(EVENTS.CRM_DEAL_UNLINKED, { nodeId: deal.node_id, dealId: deal.id })
+      eventBus.emit(EVENTS.LINK_DELETED, { nodeId: deal.node_id, dealId: deal.id })
     } catch (e) {
       // silent — user will see the button is still there
     }
@@ -818,14 +819,7 @@ export default function CRMPage() {
 
       {/* ── Top bar ── */}
       <div style={{ background: '#0747A6', color: '#fff', padding: '0 16px', height: 44, display: 'flex', alignItems: 'center', gap: 8, flexShrink: 0, boxShadow: '0 2px 8px rgba(9,30,66,0.25)' }}>
-        <button onClick={() => navigate('/app')} style={topBtn}
-          onMouseEnter={e => { e.currentTarget.style.background = 'rgba(255,255,255,0.18)'; e.currentTarget.style.borderColor = 'rgba(255,255,255,0.25)' }}
-          onMouseLeave={e => { e.currentTarget.style.background = 'rgba(255,255,255,0.1)'; e.currentTarget.style.borderColor = 'transparent' }}>
-          <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round"><polyline points="15 18 9 12 15 6"/></svg>
-          Canvas
-        </button>
-        <div style={{ width: 1, height: 16, background: 'rgba(255,255,255,0.25)' }} />
-        <span style={{ fontSize: 13, fontWeight: 700 }}>CRM Pipeline</span>
+        <ProductSwitcher currentProduct="crm" />
         <div style={{ flex: 1 }} />
         {['kanban', 'list', 'analytics'].map(v => (
           <button key={v} onClick={() => setView(v)}
@@ -1547,7 +1541,7 @@ export default function CRMPage() {
                 <div style={{ display: 'flex', gap: 4, flexShrink: 0, alignItems: 'center' }}>
                   <button
                     onClick={() => panelDeal.node_id
-                      ? navigate('/app', { state: { focusNodeId: panelDeal.node_id } })
+                      ? navigate('/canvas', { state: { focusNodeId: panelDeal.node_id } })
                       : setCanvasPicker({ deal: panelDeal })}
                     title={panelDeal.node_id ? 'Open linked canvas node' : 'Create node on canvas for this deal'}
                     style={{ background: '#F0FDF4', border: '1px solid #86EFAC', borderRadius: 6, cursor: 'pointer', padding: '6px 12px', fontSize: 13, fontWeight: 600, color: '#15803D', lineHeight: 1, whiteSpace: 'nowrap' }}
@@ -1661,7 +1655,7 @@ export default function CRMPage() {
                     {panelDeal.node_id && (
                       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
                         <span style={{ fontSize: 11, color: '#97A0AF', fontWeight: 600, textTransform: 'uppercase', letterSpacing: '0.06em' }}>Canvas Node</span>
-                        <button onClick={() => navigate('/app', { state: { focusNodeId: panelDeal.node_id } })}
+                        <button onClick={() => navigate('/canvas', { state: { focusNodeId: panelDeal.node_id } })}
                           style={{ fontSize: 11, color: '#6554C0', background: '#EAE6FF', border: 'none', borderRadius: 3, padding: '3px 8px', cursor: 'pointer' }}>
                           Open in Canvas ↗
                         </button>

@@ -39,7 +39,7 @@ export default function InlineCRMModal({ nodeId, nodeKey, companyName, projectId
         relation: 'linked_to',
         project_id: projectId || null,
       })
-      eventBus.emit(EVENTS.CRM_DEAL_LINKED, { nodeId, dealId: deal.id })
+      eventBus.emit(EVENTS.LINK_CREATED, { nodeId, dealId: deal.id })
       onClose()
     } catch (err) {
       setError(err.message || 'Failed to create deal')

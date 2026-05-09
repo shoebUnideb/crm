@@ -215,7 +215,7 @@ export default function LandingPage() {
           <div style={{ display: 'flex', gap: 12, flexWrap: 'wrap' }}>
             {isAuthenticated ? (
               <>
-                <Link to="/app" style={{ background: '#fff', color: heroBlue, textDecoration: 'none', fontWeight: 700, fontSize: '0.9375rem', borderRadius: 4, padding: '12px 28px', transition: 'background 0.15s' }}
+                <Link to="/canvas" style={{ background: '#fff', color: heroBlue, textDecoration: 'none', fontWeight: 700, fontSize: '0.9375rem', borderRadius: 4, padding: '12px 28px', transition: 'background 0.15s' }}
                   onMouseEnter={e => { e.currentTarget.style.background = blueLight }}
                   onMouseLeave={e => { e.currentTarget.style.background = '#fff' }}>
                   Open your workspace →

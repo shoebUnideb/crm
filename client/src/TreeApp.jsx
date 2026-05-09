@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useRef } from 'react'
-import { Link, NavLink, useNavigate, useLocation } from 'react-router-dom'
+import { NavLink, useNavigate, useLocation } from 'react-router-dom'
 import { NAV_LINKS } from './config/navLinks.js'
 import { useAuthModal } from './context/AuthModalContext.jsx'
 import Canvas from './components/canvas/Canvas.jsx'
@@ -8,6 +8,7 @@ import ProjectsPanel from './components/projects/ProjectsPanel.jsx'
 import DashboardPanel from './components/projects/DashboardPanel.jsx'
 import MembersPanel from './components/collaboration/MembersPanel.jsx'
 import NotificationBell from './components/notifications/NotificationBell.jsx'
+import ProductSwitcher from './components/shared/ProductSwitcher.jsx'
 import TemplatesDialog, { TEMPLATES as ALL_TEMPLATES } from './components/canvas/TemplatesDialog.jsx'
 import OnboardingModal, { STORAGE_KEY as ONBOARDING_KEY } from './components/canvas/OnboardingModal.jsx'
 import GlobalSearchModal from './components/canvas/GlobalSearchModal.jsx'
@@ -306,16 +307,8 @@ export default function TreeApp() {
 
         {/* ── LEFT: logo + page nav + project breadcrumb ───────────── */}
         <div style={{ display: 'flex', alignItems: 'center', gap: 0, minWidth: 0 }}>
-          {/* Logo */}
-          <Link to="/" style={{ display: 'flex', alignItems: 'center', gap: 7, textDecoration: 'none', padding: '0 10px 0 4px', flexShrink: 0 }}>
-            <svg width="28" height="28" viewBox="0 0 30 30" fill="none">
-              <circle cx="10" cy="15" r="9" fill="#0052CC" opacity="0.9"/>
-              <circle cx="20" cy="15" r="9" fill="#4C9AFF" opacity="0.85"/>
-            </svg>
-            <span style={{ fontWeight: 700, fontSize: '1.0625rem', color: '#fff', letterSpacing: '-0.01em' }}>
-              bahnOS
-            </span>
-          </Link>
+          {/* Product switcher (logo + dropdown to switch between Canvas and CRM) */}
+          <ProductSwitcher currentProduct="canvas" />
 
           <span style={{ width: 1, height: 18, background: 'rgba(255,255,255,0.18)', margin: '0 6px', flexShrink: 0 }} />
 
@@ -394,12 +387,6 @@ export default function TreeApp() {
             <span>Search</span>
             <kbd style={{ fontSize: 10, opacity: 0.6, border: '1px solid rgba(255,255,255,0.2)', borderRadius: 3, padding: '0 4px', background: 'rgba(0,0,0,0.2)' }}>⌘K</kbd>
           </button>
-
-          {/* CRM */}
-          <AppNavBtn onClick={() => navigate('/crm')} title="CRM Pipeline">
-            <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><line x1="23" y1="11" x2="17" y2="11"/><line x1="20" y1="8" x2="20" y2="14"/></svg>
-            CRM
-          </AppNavBtn>
 
           {/* Jira */}
           <AppNavBtn

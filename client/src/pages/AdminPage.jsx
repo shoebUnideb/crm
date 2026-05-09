@@ -190,7 +190,7 @@ export default function AdminPage() {
   if (!isAuthenticated) return (
     <div style={centerStyle}>
       <p style={{ color: '#5F6368', fontSize: 14 }}>Please sign in to access the admin panel.</p>
-      <Link to="/app" style={linkStyle}>← Back to app</Link>
+      <Link to="/canvas" style={linkStyle}>← Back to app</Link>
     </div>
   )
 
@@ -210,7 +210,7 @@ export default function AdminPage() {
         <code style={{ display: 'block', background: '#F8F9FA', border: '1px solid #DADCE0', borderRadius: 4, padding: '10px 14px', fontSize: 11, color: '#3C4043', textAlign: 'left', marginBottom: 20 }}>
           UPDATE users SET is_admin = true<br/>WHERE email = '{user?.email}';
         </code>
-        <Link to="/app" style={linkStyle}>← Back to app</Link>
+        <Link to="/canvas" style={linkStyle}>← Back to app</Link>
       </div>
     </div>
   )
@@ -252,7 +252,7 @@ export default function AdminPage() {
               <div style={{ fontSize: 10, color: '#1a73e8', fontWeight: 500 }}>Admin</div>
             </div>
           </div>
-          <Link to="/app" style={{ display: 'flex', alignItems: 'center', gap: 6, fontSize: 12, color: '#5F6368', textDecoration: 'none' }}
+          <Link to="/canvas" style={{ display: 'flex', alignItems: 'center', gap: 6, fontSize: 12, color: '#5F6368', textDecoration: 'none' }}
             onMouseEnter={e => e.currentTarget.style.color = '#1a73e8'}
             onMouseLeave={e => e.currentTarget.style.color = '#5F6368'}
           >

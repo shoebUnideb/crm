@@ -8,7 +8,7 @@ const COLUMNS = [
       { label: 'Home', to: '/' },
       { label: 'Features', to: '/features' },
       { label: 'Templates', to: '/templates' },
-      { label: 'Open App', to: '/app' },
+      { label: 'Open App', to: '/canvas' },
     ],
   },
   {

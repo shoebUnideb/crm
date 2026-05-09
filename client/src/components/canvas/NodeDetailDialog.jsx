@@ -1,6 +1,8 @@
 import React, { useState, useEffect, useRef, useCallback } from 'react'
 import { useNavigate } from 'react-router-dom'
-import InlineCRMModal from './InlineCRMModal.jsx'
+
+// Lazy-loaded: prevents CRM code from entering the Canvas JS chunk
+const InlineCRMModal = React.lazy(() => import('../crm/InlineCRMModal.jsx'))
 
 // ── Design tokens ─────────────────────────────────────────────────────────────
 const navy    = '#172B4D'
@@ -860,13 +862,15 @@ export default function NodeDetailDialog({
       </div>
 
       {showCRMModal && (
-        <InlineCRMModal
-          nodeId={node.id}
-          nodeKey={node.nodeKey || ''}
-          companyName={node.title || ''}
-          projectId={projectId}
-          onClose={() => setShowCRMModal(false)}
-        />
+        <React.Suspense fallback={null}>
+          <InlineCRMModal
+            nodeId={node.id}
+            nodeKey={node.nodeKey || ''}
+            companyName={node.title || ''}
+            projectId={projectId}
+            onClose={() => setShowCRMModal(false)}
+          />
+        </React.Suspense>
       )}
     </div>
   )
