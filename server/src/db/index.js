@@ -144,8 +144,6 @@ export async function initDb() {
   await p.query(`ALTER TABLE crm_deals ADD COLUMN IF NOT EXISTS linkedin_url TEXT`)
   await p.query(`ALTER TABLE crm_deals ADD COLUMN IF NOT EXISTS follow_up_at DATE`)
   await p.query(`ALTER TABLE crm_deals ADD COLUMN IF NOT EXISTS node_id TEXT`)
-  await p.query(`ALTER TABLE crm_deals ADD COLUMN IF NOT EXISTS org_id INTEGER REFERENCES crm_organizations(id) ON DELETE SET NULL`)
-  await p.query(`CREATE INDEX IF NOT EXISTS idx_crm_deals_org ON crm_deals(org_id)`)
 
   await p.query(`
     CREATE TABLE IF NOT EXISTS crm_contacts (
@@ -318,6 +316,8 @@ export async function initDb() {
     )
   `)
   await p.query(`CREATE INDEX IF NOT EXISTS idx_crm_orgs_user ON crm_organizations(user_id)`)
+  await p.query(`ALTER TABLE crm_deals ADD COLUMN IF NOT EXISTS org_id INTEGER REFERENCES crm_organizations(id) ON DELETE SET NULL`)
+  await p.query(`CREATE INDEX IF NOT EXISTS idx_crm_deals_org ON crm_deals(org_id)`)
   await p.query(`ALTER TABLE crm_people ADD COLUMN IF NOT EXISTS org_id INTEGER REFERENCES crm_organizations(id) ON DELETE SET NULL`)
   await p.query(`CREATE INDEX IF NOT EXISTS idx_crm_people_org ON crm_people(org_id)`)
 
