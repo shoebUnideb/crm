@@ -97,7 +97,7 @@ export default function RegisterPage() {
       const data = await res.json()
       if (!res.ok) { setError(data.error || 'Registration failed'); return }
       login(data.token, data.user)
-      navigate('/app')
+      navigate('/app/canvas-info')
     } catch {
       setError('Network error — please try again')
     } finally {

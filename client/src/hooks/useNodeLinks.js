@@ -26,8 +26,8 @@ export function useNodeLinks(projectId) {
   useEffect(() => { fetchLinks() }, [fetchLinks])
 
   useEffect(() => {
-    const unsub1 = eventBus.on(EVENTS.CRM_DEAL_LINKED, fetchLinks)
-    const unsub2 = eventBus.on(EVENTS.CRM_DEAL_UNLINKED, fetchLinks)
+    const unsub1 = eventBus.on(EVENTS.LINK_CREATED, fetchLinks)
+    const unsub2 = eventBus.on(EVENTS.LINK_DELETED, fetchLinks)
     const unsub3 = eventBus.on(EVENTS.NODE_LINKS_CHANGED, fetchLinks)
     return () => { unsub1(); unsub2(); unsub3() }
   }, [fetchLinks])

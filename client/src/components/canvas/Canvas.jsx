@@ -110,6 +110,7 @@ export default function Canvas({
   onSetNodeMeta,
   onAddComment,
   onDeleteComment,
+  onEditComment,
   onCollapseToDepth,
   onApplyJiraKeys,
   onImportTemplate,
@@ -187,7 +188,7 @@ export default function Canvas({
   // Feature states
   const [showSearch, setShowSearch] = useState(false)
   const [contextMenu, setContextMenu] = useState(null)
-  const [showMinimap, setShowMinimap] = useState(true)
+  const [showMinimap, setShowMinimap] = useState(false)
   const [snapToGrid, setSnapToGrid] = useState(false)
   const [showNotes, setShowNotes] = useState(false)
   const [showShortcuts, setShowShortcuts] = useState(false)
@@ -2280,6 +2281,7 @@ export default function Canvas({
           onSave={(nodeId, meta) => onSetNodeMeta?.(nodeId, meta)}
           onAddComment={onAddComment}
           onDeleteComment={onDeleteComment}
+          onEditComment={onEditComment}
           onAddChild={(parentId) => { onAddChild?.(parentId) }}
           onOpenDetail={(nodeId) => setNodeDetailId(nodeId)}
           onClose={() => setNodeDetailId(null)}
@@ -2555,14 +2557,6 @@ export default function Canvas({
         </div>
       )}
 
-      {/* Graph Lens Bar — overlay toggle controls */}
-      {!presentationMode && (
-        <GraphLensBar
-          activeLens={activeLens}
-          onToggle={handleLensToggle}
-          loading={overlayLoading}
-        />
-      )}
 
       {/* Impact Analysis Panel */}
       {impactNodeId && (

@@ -1,21 +1,35 @@
-import React, { useState, useEffect, useCallback, useRef } from 'react'
-import { useNavigate, useLocation } from 'react-router-dom'
+import React, { useState, useEffect, useCallback, useRef, useMemo } from 'react'
+import { useNavigate, useLocation, Navigate } from 'react-router-dom'
 import { crmApi } from '../lib/crmApi.js'
 import { linksApi } from '../lib/linksApi.js'
 import { eventBus, EVENTS } from '../lib/eventBus.js'
+import { peopleApi } from '../lib/crmPeopleApi.js'
+import AppShell from '../components/shared/AppShell.jsx'
+import ContactsSection from '../components/crm/ContactsSection.jsx'
+import OrganizationsSection from '../components/crm/OrganizationsSection.jsx'
+import LeadsSection from '../components/crm/LeadsSection.jsx'
+import DashboardHub from '../components/crm/DashboardHub.jsx'
+import GlobalSearch from '../components/crm/GlobalSearch.jsx'
+import StageManager from '../components/crm/StageManager.jsx'
+import CRMNotifications from '../components/crm/CRMNotifications.jsx'
+import EmailPanel from '../components/crm/EmailPanel.jsx'
+import ActivityTimeline from '../components/crm/ActivityTimeline.jsx'
+import CRMSettings from '../components/crm/CRMSettings.jsx'
+import MeetingsCalendar from '../components/crm/MeetingsCalendar.jsx'
+import DealMorePanel from '../components/crm/DealMorePanel.jsx'
+import CRMSetupGuide from '../components/crm/CRMSetupGuide.jsx'
+import ContactsTimeline from '../components/crm/ContactsTimeline.jsx'
 
 // ── Constants ──────────────────────────────────────────────────────────────────
-const STAGES = [
-  { id: 'lead',        label: 'Lead',        color: '#5E6C84', bg: '#F4F5F7', border: '#DFE1E6' },
-  { id: 'qualified',   label: 'Qualified',   color: '#0052CC', bg: '#DEEBFF', border: '#4C9AFF' },
-  { id: 'demo',        label: 'Demo',        color: '#6554C0', bg: '#EAE6FF', border: '#8777D9' },
-  { id: 'proposal',    label: 'Proposal',    color: '#00875A', bg: '#E3FCEF', border: '#57D9A3' },
-  { id: 'negotiation', label: 'Negotiation', color: '#974F0C', bg: '#FFFAE6', border: '#FFE380' },
-  { id: 'won',         label: 'Won ✓',       color: '#006644', bg: '#E3FCEF', border: '#36B37E' },
-  { id: 'lost',        label: 'Lost ✗',      color: '#BF2600', bg: '#FFEBE6', border: '#FF8F73' },
+const DEFAULT_STAGES = [
+  { id: 'lead',        label: 'Lead',        color: '#5E6C84', bg: '#F4F5F7', border: '#DFE1E6', probability: 10,  is_won: false, is_lost: false },
+  { id: 'qualified',   label: 'Qualified',   color: '#0052CC', bg: '#DEEBFF', border: '#4C9AFF', probability: 25,  is_won: false, is_lost: false },
+  { id: 'demo',        label: 'Demo',        color: '#6554C0', bg: '#EAE6FF', border: '#8777D9', probability: 40,  is_won: false, is_lost: false },
+  { id: 'proposal',    label: 'Proposal',    color: '#00875A', bg: '#E3FCEF', border: '#57D9A3', probability: 60,  is_won: false, is_lost: false },
+  { id: 'negotiation', label: 'Negotiation', color: '#974F0C', bg: '#FFFAE6', border: '#FFE380', probability: 80,  is_won: false, is_lost: false },
+  { id: 'won',         label: 'Won ✓',       color: '#006644', bg: '#E3FCEF', border: '#36B37E', probability: 100, is_won: true,  is_lost: false },
+  { id: 'lost',        label: 'Lost ✗',      color: '#BF2600', bg: '#FFEBE6', border: '#FF8F73', probability: 0,   is_won: false, is_lost: true  },
 ]
-const STAGE_MAP = Object.fromEntries(STAGES.map(s => [s.id, s]))
-const PROB_MAP  = { lead: 10, qualified: 25, demo: 40, proposal: 60, negotiation: 80, won: 100, lost: 0 }
 const STAGE_BENCH = { lead: 3, qualified: 7, demo: 5, proposal: 10, negotiation: 14 }
 // F3: stage progression rules — fields that should be present before advancing
 const STAGE_RULES = {
@@ -93,7 +107,7 @@ function probDecay(d) {
   const bench = STAGE_BENCH[d.stage]
   if (!bench) return false
   const daysInStage = Math.floor((Date.now() - new Date(d.stage_entered_at || d.created_at)) / 86_400_000)
-  const defaultProb = PROB_MAP[d.stage]
+  const defaultProb = DEFAULT_STAGES.find(s => s.id === d.stage)?.probability ?? 10
   return daysInStage > bench && d.probability === defaultProb
 }
 function stageTime(d) {
@@ -132,6 +146,36 @@ export default function CRMPage() {
   const [sortBy, setSortBy] = useState('updated_at')
   const [sortDir, setSortDir] = useState('desc')
 
+  // Section — derived from URL path
+  const section = useMemo(() => {
+    const path = location.pathname.replace(/^\/(app\/)?crm\/?/, '').split('/')[0]
+    const valid = ['setup','dashboard','pipeline','contacts','contacts-timeline','organizations','leads','meetings','settings']
+    return valid.includes(path) ? path : null
+  }, [location.pathname])
+
+  const [navContext, setNavContext] = useState(null) // tracks which primary nav was used
+
+  const parentSection = useMemo(() => {
+    if (section === 'dashboard') return 'insights'
+    if (section === 'organizations' && navContext === 'contacts') return 'contacts'
+    if (section === 'contacts-timeline') return 'contacts'
+    return section
+  }, [section, navContext])
+
+  const dealIdFromUrl = useMemo(() => {
+    const match = location.pathname.match(/^\/(app\/)?crm\/pipeline\/(\d+)$/)
+    return match ? match[2] : null
+  }, [location.pathname])
+
+  const goToSection = useCallback((sec) => {
+    navigate(`/app/crm/${sec}`)
+  }, [navigate])
+  const [addPersonOpen, setAddPersonOpen] = useState(false)
+  const [addPersonInitial, setAddPersonInitial] = useState(null)
+  const [addOrgOpen, setAddOrgOpen] = useState(false)
+  const [leadsImportOpen, setLeadsImportOpen] = useState(false)
+  const [settingsTab, setSettingsTab] = useState(null)
+
   // Right panel
   const [panelDeal, setPanelDeal] = useState(null)
   const [panelTab, setPanelTab] = useState('overview')
@@ -166,6 +210,7 @@ export default function CRMPage() {
 
   // Delete confirm
   const [deleteConfirm, setDeleteConfirm] = useState(null)
+  const [dealActionsOpen, setDealActionsOpen] = useState(false)
 
   // Company profile modal (feature 6)
   const [companyModal, setCompanyModal] = useState(null) // company name string
@@ -198,6 +243,10 @@ export default function CRMPage() {
   // F15: heatmap mode
   const [heatmapMode, setHeatmapMode] = useState(null) // null | 'value' | 'probability' | 'age'
 
+  // Bulk selection
+  const [selectedIds, setSelectedIds] = useState(new Set())
+  const [bulkLoading, setBulkLoading] = useState(false)
+
   // F16: card field visibility
   const [cardFields, setCardFields] = useState(() => {
     try { return JSON.parse(localStorage.getItem('crm-card-fields') || 'null') } catch { return null }
@@ -226,6 +275,21 @@ export default function CRMPage() {
   const [goalModal, setGoalModal]   = useState(false)
   const [goalForm, setGoalForm]     = useState({ target_value: '', target_count: '' }) // { message, dealId, targetStage }
 
+  // Stages
+  const [stages, setStages] = useState(DEFAULT_STAGES)
+  const [stageManagerOpen, setStageManagerOpen] = useState(false)
+  const [pipelines, setPipelines] = useState([])
+  const [activePipelineId, setActivePipelineId] = useState(null)
+  const stageMap = useMemo(() => Object.fromEntries(stages.map(s => [s.id, s])), [stages])
+  const visibleStages = useMemo(() => {
+    if (!activePipelineId) return stages.filter(s => !s.pipeline_id)
+    return stages.filter(s => s.pipeline_id === activePipelineId)
+  }, [stages, activePipelineId])
+  const visibleDeals = useMemo(() => {
+    if (!activePipelineId) return deals.filter(d => !d.pipeline_id)
+    return deals.filter(d => d.pipeline_id === activePipelineId)
+  }, [deals, activePipelineId])
+
   // ── Load ────────────────────────────────────────────────────────────────────
   const load = useCallback(async () => {
     try { setLoading(true); setDeals(await crmApi.getDeals()) }
@@ -233,6 +297,13 @@ export default function CRMPage() {
     finally { setLoading(false) }
   }, [])
   useEffect(() => { load() }, [load])
+
+  useEffect(() => {
+    peopleApi.getStages().then(data => {
+      setStages(data.map(s => ({ ...s, dbId: s.id, id: s.name, bg: s.bg_color, border: s.border_color })))
+    }).catch(() => {})
+    crmApi.getPipelines().then(setPipelines).catch(() => {})
+  }, [])
 
   // F19: load goals on mount
   useEffect(() => {
@@ -290,20 +361,20 @@ export default function CRMPage() {
     window.history.replaceState({}, '')
   }, [location.state])
 
-  // Open deal panel when navigating from global search
+  // Open deal panel when navigating to /crm/pipeline/:dealId
   useEffect(() => {
-    const id = location.state?.openDealId
-    if (!id || !deals.length) return
-    const deal = deals.find(d => d.id === id)
-    if (deal) { openPanel(deal); window.history.replaceState({}, '') }
-  }, [location.state, deals])
+    if (!dealIdFromUrl || !deals.length) return
+    if (String(panelDeal?.id) === dealIdFromUrl) return
+    const deal = deals.find(d => String(d.id) === dealIdFromUrl)
+    if (deal) openPanel(deal)
+  }, [dealIdFromUrl, deals])
 
   // ── Duplicate detector (feature 10) ─────────────────────────────────────────
   useEffect(() => {
     if (editModal !== 'new' || !form.company_name.trim()) { setDupWarning(''); return }
     const name = form.company_name.trim().toLowerCase()
     const dup = deals.find(d => d.company_name.toLowerCase() === name && d.stage !== 'lost')
-    setDupWarning(dup ? `⚠ "${dup.company_name}" already has an open deal in ${STAGE_MAP[dup.stage]?.label}` : '')
+    setDupWarning(dup ? `⚠ "${dup.company_name}" already has an open deal in ${stageMap[dup.stage]?.label}` : '')
   }, [form.company_name, editModal, deals])
 
   // ── Canvas link: create a new node in chosen project/map ────────────────────
@@ -431,11 +502,11 @@ export default function CRMPage() {
         target_type: 'crm_deal', target_id: String(deal.id),
         relation: 'linked_to', project_id: targetProjId,
       }).catch(() => {})
-      eventBus.emit(EVENTS.CRM_DEAL_LINKED, { nodeId, dealId: deal.id })
+      eventBus.emit(EVENTS.LINK_CREATED, { nodeId, dealId: deal.id })
       setDeals(ds => ds.map(d => d.id === deal.id ? updated : d))
       if (panelDeal?.id === deal.id) setPanelDeal(updated)
       setCanvasPicker(null)
-      navigate('/app', { state: { focusNodeId: nodeId, projectId: targetProjId, mapId: targetMapId } })
+      navigate('/app/canvas', { state: { focusNodeId: nodeId, projectId: targetProjId, mapId: targetMapId } })
     } catch (e) {
       setCpError(e.message || 'Failed to create node')
     } finally {
@@ -458,7 +529,7 @@ export default function CRMPage() {
       })
       setDeals(ds => ds.map(d => d.id === deal.id ? updated : d))
       if (panelDeal?.id === deal.id) setPanelDeal(updated)
-      eventBus.emit(EVENTS.CRM_DEAL_UNLINKED, { nodeId: deal.node_id, dealId: deal.id })
+      eventBus.emit(EVENTS.LINK_DELETED, { nodeId: deal.node_id, dealId: deal.id })
     } catch (e) {
       // silent — user will see the button is still there
     }
@@ -468,8 +539,8 @@ export default function CRMPage() {
   const now = new Date()
   const thisMonth = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}`
   const active   = deals.filter(d => d.stage !== 'won' && d.stage !== 'lost')
-  const wonDeals = deals.filter(d => d.stage === 'won')
-  const lostDeals = deals.filter(d => d.stage === 'lost')
+  const wonDeals = visibleDeals.filter(d => d.stage === 'won')
+  const lostDeals = visibleDeals.filter(d => d.stage === 'lost')
   const wonMonth = wonDeals.filter(d => (d.updated_at || '').slice(0, 7) === thisMonth)
   const pipeline = active.reduce((s, d) => s + parseFloat(d.deal_value || 0), 0)
   const forecast = active.reduce((s, d) => s + dealScore(d), 0)  // feature 3
@@ -497,6 +568,7 @@ export default function CRMPage() {
 
   // ── Panel helpers ────────────────────────────────────────────────────────────
   async function openPanel(deal) {
+    navigate(`/app/crm/pipeline/${deal.id}`, { replace: true })
     setPanelDeal(deal); setPanelTab('overview'); setPanelLoading(true)
     setAddingContact(false); setAddingActivity(false); setAddingTask(false)
     setAddingComment(false); setNewComment('')
@@ -512,6 +584,7 @@ export default function CRMPage() {
     finally { setPanelLoading(false) }
   }
   function closePanel() {
+    navigate('/app/crm/pipeline', { replace: true })
     setPanelDeal(null); setPanelContacts([]); setPanelActivities([]); setPanelTasks([]); setPanelComments([])
   }
 
@@ -531,7 +604,7 @@ export default function CRMPage() {
       notes: deal.notes || '',
       last_contact_at: deal.last_contact_at ? deal.last_contact_at.slice(0, 10) : '',
       expected_close_date: deal.expected_close_date ? deal.expected_close_date.slice(0, 10) : '',
-      probability: deal.probability ?? PROB_MAP[deal.stage] ?? 10,
+      probability: deal.probability ?? stageMap[deal.stage]?.probability ?? 10,
       linkedin_url: deal.linkedin_url || '',
       follow_up_at: deal.follow_up_at ? deal.follow_up_at.slice(0, 10) : '',
       node_id: deal.node_id || '',
@@ -543,9 +616,22 @@ export default function CRMPage() {
     setFormError(''); setShowAdv(false); setEditModal(deal)
   }
 
+  async function cloneDeal(deal) {
+    try {
+      const cloned = await peopleApi.cloneDeal(deal.id)
+      setDeals(prev => [cloned, ...prev])
+    } catch { /* silent */ }
+  }
+
+  async function toggleStarDeal(deal) {
+    try {
+      const r = await peopleApi.starDeal(deal.id)
+      setDeals(prev => prev.map(d => d.id === deal.id ? { ...d, starred: r.starred } : d))
+      if (panelDeal?.id === deal.id) setPanelDeal(p => ({ ...p, starred: r.starred }))
+    } catch { /* silent */ }
+  }
+
   async function handleSave(e) {
-    e.preventDefault()
-    if (!form.company_name.trim()) { setFormError('Company name is required.'); return }
     // If transitioning to lost via edit modal, ensure lost_reason collected
     if (editModal !== 'new' && form.stage === 'lost' && editModal.stage !== 'lost' && !form.lost_reason.trim()) {
       setShowAdv(true)
@@ -581,8 +667,8 @@ export default function CRMPage() {
     // F3: check stage progression rules
     const ruleMsg = STAGE_RULES[stageId]?.(deal)
     if (ruleMsg) { setStageRuleWarn({ message: ruleMsg, dealId: deal.id, targetStage: stageId }); return }
-    setDeals(prev => prev.map(d => d.id === deal.id ? { ...d, stage: stageId, probability: PROB_MAP[stageId] } : d))
-    if (panelDeal?.id === deal.id) setPanelDeal(p => ({ ...p, stage: stageId, probability: PROB_MAP[stageId] }))
+    setDeals(prev => prev.map(d => d.id === deal.id ? { ...d, stage: stageId, probability: stageMap[stageId]?.probability ?? 10 } : d))
+    if (panelDeal?.id === deal.id) setPanelDeal(p => ({ ...p, stage: stageId, probability: stageMap[stageId]?.probability ?? 10 }))
     try { await crmApi.updateStage(deal.id, stageId) } catch { load() }
   }
 
@@ -590,8 +676,8 @@ export default function CRMPage() {
   async function handleStageRuleConfirm() {
     if (!stageRuleWarn) return
     const { dealId, targetStage } = stageRuleWarn
-    setDeals(prev => prev.map(d => d.id === dealId ? { ...d, stage: targetStage, probability: PROB_MAP[targetStage] } : d))
-    if (panelDeal?.id === dealId) setPanelDeal(p => ({ ...p, stage: targetStage, probability: PROB_MAP[targetStage] }))
+    setDeals(prev => prev.map(d => d.id === dealId ? { ...d, stage: targetStage, probability: stageMap[targetStage]?.probability ?? 10 } : d))
+    if (panelDeal?.id === dealId) setPanelDeal(p => ({ ...p, stage: targetStage, probability: stageMap[targetStage]?.probability ?? 10 }))
     try { await crmApi.updateStage(dealId, targetStage) } catch { load() }
     setStageRuleWarn(null)
   }
@@ -628,6 +714,56 @@ export default function CRMPage() {
       if (editModal?.id === deleteConfirm) setEditModal(null)
     } catch {}
     setDeleteConfirm(null)
+  }
+
+  // ── Bulk operations ──────────────────────────────────────────────────────────
+  function toggleSelect(id, e) {
+    if (e) e.stopPropagation()
+    setSelectedIds(prev => {
+      const next = new Set(prev)
+      next.has(id) ? next.delete(id) : next.add(id)
+      return next
+    })
+  }
+  async function bulkMoveStage(stage) {
+    setBulkLoading(true)
+    try {
+      await crmApi.bulkAction([...selectedIds], 'move_stage', { stage })
+      await load()
+      setSelectedIds(new Set())
+    } catch {}
+    setBulkLoading(false)
+  }
+  async function bulkDelete() {
+    if (!confirm(`Delete ${selectedIds.size} deal(s)? This cannot be undone.`)) return
+    setBulkLoading(true)
+    try {
+      await crmApi.bulkAction([...selectedIds], 'delete')
+      await load()
+      setSelectedIds(new Set())
+      if (panelDeal && selectedIds.has(panelDeal.id)) closePanel()
+    } catch {}
+    setBulkLoading(false)
+  }
+  async function bulkAssign(assignee) {
+    if (!assignee.trim()) return
+    setBulkLoading(true)
+    try {
+      await crmApi.bulkAction([...selectedIds], 'assign', { assigned_to: assignee.trim() })
+      await load()
+      setSelectedIds(new Set())
+    } catch {}
+    setBulkLoading(false)
+  }
+  function bulkExportCsv() {
+    const selected = deals.filter(d => selectedIds.has(d.id))
+    const cols = ['company_name','contact_name','contact_email','deal_value','stage','probability','next_action','expected_close_date','assigned_to','notes']
+    const csv = [cols.join(','), ...selected.map(row => cols.map(c => `"${(row[c] ?? '').toString().replace(/"/g, '""')}"`).join(','))].join('\n')
+    const blob = new Blob([csv], { type: 'text/csv' })
+    const url = URL.createObjectURL(blob)
+    const a = document.createElement('a')
+    a.href = url; a.download = 'deals-export.csv'; a.click()
+    URL.revokeObjectURL(url)
   }
 
   // ── Contacts handlers (feature 7) ────────────────────────────────────────────
@@ -721,7 +857,7 @@ export default function CRMPage() {
   }
 
   // ── F9: filtered deals ───────────────────────────────────────────────────────
-  const filteredDeals = deals.filter(d => {
+  const filteredDeals = visibleDeals.filter(d => {
     if (searchQuery) {
       const q = searchQuery.toLowerCase()
       if (!d.company_name?.toLowerCase().includes(q) && !d.contact_name?.toLowerCase().includes(q)) return false
@@ -778,10 +914,16 @@ export default function CRMPage() {
             contact_email: row.contact_email || row.email || '',
             deal_value: row.deal_value || row.value || row.amount || '',
             stage: row.stage || 'lead',
+            probability: row.probability || '',
             next_action: row.next_action || '',
             notes: row.notes || '',
+            expected_close_date: row.expected_close_date || '',
+            linkedin_url: row.linkedin_url || '',
             tags: row.tags || '',
             assigned_to: row.assigned_to || row.owner || '',
+            pipeline_id: row.pipeline_id || '',
+            follow_up_at: row.follow_up_at || row.follow_up || '',
+            last_contact_at: row.last_contact_at || '',
           })
           created++
         } catch { failed++ }
@@ -793,6 +935,15 @@ export default function CRMPage() {
     } finally {
       setCsvImporting(false)
     }
+  }
+
+  function downloadDealsTemplate() {
+    const csv = 'company_name,contact_name,contact_email,deal_value,stage,probability,next_action,notes,expected_close_date,linkedin_url,tags,assigned_to,pipeline_id,follow_up_at,last_contact_at\nAcme Corp,John Smith,john@acme.com,15000,qualified,60,Schedule demo,Enterprise client,2026-07-01,https://linkedin.com/in/johnsmith,enterprise,Sarah,1,2026-06-20,2026-05-10\nTechStart Inc,Jane Doe,jane@techstart.io,5000,lead,10,Follow up email,Startup lead,2026-08-15,https://linkedin.com/in/janedoe,startup hot,Mike,1,2026-06-01,\n'
+    const blob = new Blob([csv], { type: 'text/csv' })
+    const url = URL.createObjectURL(blob)
+    const a = document.createElement('a')
+    a.href = url; a.download = 'deals_import_template.csv'; a.click()
+    URL.revokeObjectURL(url)
   }
 
   // ── List sort (feature 19) ───────────────────────────────────────────────────
@@ -813,174 +964,352 @@ export default function CRMPage() {
   const pendingTasks = panelTasks.filter(t => !t.done)
   const overdueTasks = panelTasks.filter(t => !t.done && t.due_at && new Date(t.due_at) < now)
 
-  return (
-    <div style={{ display: 'flex', flexDirection: 'column', height: '100vh', background: '#F7F8FA', fontFamily: '-apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif', overflow: 'hidden' }}>
+  if (!section) {
+    return <Navigate to="/app/crm/dashboard" replace />
+  }
 
-      {/* ── Top bar ── */}
-      <div style={{ background: '#0747A6', color: '#fff', padding: '0 16px', height: 44, display: 'flex', alignItems: 'center', gap: 8, flexShrink: 0, boxShadow: '0 2px 8px rgba(9,30,66,0.25)' }}>
-        <button onClick={() => navigate('/app')} style={topBtn}
-          onMouseEnter={e => { e.currentTarget.style.background = 'rgba(255,255,255,0.18)'; e.currentTarget.style.borderColor = 'rgba(255,255,255,0.25)' }}
-          onMouseLeave={e => { e.currentTarget.style.background = 'rgba(255,255,255,0.1)'; e.currentTarget.style.borderColor = 'transparent' }}>
-          <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round"><polyline points="15 18 9 12 15 6"/></svg>
-          Canvas
-        </button>
-        <div style={{ width: 1, height: 16, background: 'rgba(255,255,255,0.25)' }} />
-        <span style={{ fontSize: 13, fontWeight: 700 }}>CRM Pipeline</span>
-        <div style={{ flex: 1 }} />
-        {['kanban', 'list', 'analytics'].map(v => (
-          <button key={v} onClick={() => setView(v)}
-            style={{ ...topBtn, background: view === v ? 'rgba(255,255,255,0.2)' : 'rgba(255,255,255,0.06)', borderColor: view === v ? 'rgba(255,255,255,0.3)' : 'transparent', fontWeight: view === v ? 700 : 400 }}
-            onMouseEnter={e => { if (view !== v) { e.currentTarget.style.background = 'rgba(255,255,255,0.14)'; e.currentTarget.style.borderColor = 'rgba(255,255,255,0.2)' } }}
-            onMouseLeave={e => { if (view !== v) { e.currentTarget.style.background = 'rgba(255,255,255,0.06)'; e.currentTarget.style.borderColor = 'transparent' } }}>
-            {v === 'kanban' ? '⎔ Board' : v === 'list' ? '≡ List' : '▲ Analytics'}
-          </button>
-        ))}
-        {/* F9: filter toggle */}
-        <button onClick={() => setShowFilterBar(s => !s)}
-          style={{ ...topBtn, background: showFilterBar ? 'rgba(255,255,255,0.2)' : 'rgba(255,255,255,0.06)', borderColor: showFilterBar ? 'rgba(255,255,255,0.3)' : 'transparent', position: 'relative' }}
-          title="Search & filter"
-          onMouseEnter={e => { if (!showFilterBar) { e.currentTarget.style.background = 'rgba(255,255,255,0.14)'; e.currentTarget.style.borderColor = 'rgba(255,255,255,0.2)' } }}
-          onMouseLeave={e => { if (!showFilterBar) { e.currentTarget.style.background = 'rgba(255,255,255,0.06)'; e.currentTarget.style.borderColor = 'transparent' } }}>
-          🔍
-          {(searchQuery || filterStage || filterMin || filterMax) && (
-            <span style={{ position: 'absolute', top: 3, right: 3, width: 5, height: 5, borderRadius: '50%', background: '#FF5630' }} />
-          )}
-        </button>
-        {/* F14: forecast column toggle */}
-        {view === 'kanban' && (
-          <button onClick={() => setShowForecast(s => !s)}
-            style={{ ...topBtn, background: showForecast ? 'rgba(255,255,255,0.2)' : 'rgba(255,255,255,0.06)', borderColor: showForecast ? 'rgba(255,255,255,0.3)' : 'transparent' }}
-            title="Closing this month"
-            onMouseEnter={e => { if (!showForecast) { e.currentTarget.style.background = 'rgba(255,255,255,0.14)'; e.currentTarget.style.borderColor = 'rgba(255,255,255,0.2)' } }}
-            onMouseLeave={e => { if (!showForecast) { e.currentTarget.style.background = 'rgba(255,255,255,0.06)'; e.currentTarget.style.borderColor = 'transparent' } }}>
-            📅 Forecast
-          </button>
-        )}
-        {/* F15: heatmap cycle */}
-        {view === 'kanban' && (
+  return (
+    <AppShell
+      currentProduct="crm"
+      notifications={
+        <CRMNotifications onOpenDeal={deal => { goToSection('pipeline'); openPanel(deal) }} />
+      }
+      contextArea={
+        <>
+          <span style={{ fontSize: 14, fontWeight: 600, color: '#fff', letterSpacing: '0.01em' }}>
+            {section === 'setup' ? 'Setup Guide' : section === 'pipeline' ? 'Pipeline' : section === 'contacts' ? 'Contacts' : section === 'organizations' ? 'Organizations' : section === 'leads' ? 'Leads' : section === 'dashboard' ? 'Dashboards' : section === 'meetings' ? 'Meetings' : section === 'settings' ? 'Settings' : section.charAt(0).toUpperCase() + section.slice(1)}
+          </span>
+          <div style={{ flex: 1 }} />
+          <GlobalSearch stages={stages} onNavigate={(sec, item) => {
+            goToSection(sec)
+            if (sec === 'pipeline' && item) setTimeout(() => openPanel(item), 50)
+          }} />
+        </>
+      }
+    >
+    <div style={{ display: 'flex', flexDirection: 'column', flex: 1, background: '#F7F8FA', fontFamily: '-apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif', overflow: 'hidden' }}>
+      <style>{`@keyframes pulse-rot { 0%,100%{opacity:1} 50%{opacity:0.6} }
+.deal-bulk-check { opacity: 0; transition: opacity 0.1s; }
+.deal-bulk-check:checked, div:hover > .deal-bulk-check { opacity: 1 !important; }`}</style>
+
+      {/* ── Body: left sidebar + main content ── */}
+      <div style={{ flex: 1, display: 'flex', overflow: 'hidden' }}>
+
+        {/* Left sidebar — icon + label nav */}
+        <nav style={{ width: 68, background: '#172B4D', display: 'flex', flexDirection: 'column', alignItems: 'center', paddingTop: 10, gap: 2, flexShrink: 0 }}>
+          {/* Back to CRM landing */}
           <button
-            onClick={() => setHeatmapMode(m => m === null ? 'value' : m === 'value' ? 'probability' : m === 'probability' ? 'age' : null)}
-            style={{ ...topBtn, background: heatmapMode ? 'rgba(255,255,255,0.2)' : 'rgba(255,255,255,0.06)', borderColor: heatmapMode ? 'rgba(255,255,255,0.3)' : 'transparent' }}
-            title={`Heatmap: ${heatmapMode || 'off'}`}
-            onMouseEnter={e => { if (!heatmapMode) { e.currentTarget.style.background = 'rgba(255,255,255,0.14)'; e.currentTarget.style.borderColor = 'rgba(255,255,255,0.2)' } }}
-            onMouseLeave={e => { if (!heatmapMode) { e.currentTarget.style.background = 'rgba(255,255,255,0.06)'; e.currentTarget.style.borderColor = 'transparent' } }}>
-            🌡 {heatmapMode ? `Heat: ${heatmapMode}` : 'Heatmap'}
+            onClick={() => navigate('/app/crm-info')}
+            title="Back to CRM overview"
+            style={{
+              marginBottom: 6,
+              width: 56, padding: '8px 4px', borderRadius: 4,
+              display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', gap: 3,
+              background: 'none', border: '1.5px solid transparent',
+              color: 'rgba(255,255,255,0.45)', cursor: 'pointer', transition: 'all 0.15s',
+            }}
+            onMouseEnter={e => { e.currentTarget.style.background = 'rgba(255,255,255,0.08)'; e.currentTarget.style.color = 'rgba(255,255,255,0.85)' }}
+            onMouseLeave={e => { e.currentTarget.style.background = 'none'; e.currentTarget.style.color = 'rgba(255,255,255,0.45)' }}
+          >
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
+              <polyline points="15 18 9 12 15 6"/>
+            </svg>
+            <span style={{ fontSize: 9, fontWeight: 500, letterSpacing: '0.01em', lineHeight: 1 }}>Back</span>
           </button>
+          {[
+            { id: 'setup', title: 'Setup guide', icon: (
+              <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
+                <rect x="4" y="3" width="16" height="18" rx="2"/><line x1="8" y1="7" x2="16" y2="7"/><line x1="8" y1="11" x2="16" y2="11"/><line x1="8" y1="15" x2="12" y2="15"/>
+              </svg>
+            )},
+            { id: 'contacts', title: 'Contacts', icon: (
+              <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
+                <path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/>
+                <path d="M23 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/>
+              </svg>
+            )},
+            { id: 'meetings', title: 'Activities', icon: (
+              <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
+                <rect x="3" y="4" width="18" height="18" rx="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/>
+              </svg>
+            )},
+            { id: 'pipeline', title: 'Deals', icon: (
+              <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
+                <circle cx="12" cy="12" r="9"/><text x="12" y="15" textAnchor="middle" fontSize="11" fill="currentColor" stroke="none" fontWeight="bold">$</text>
+              </svg>
+            )},
+            { id: 'leads', title: 'Leads', icon: (
+              <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
+                <circle cx="12" cy="12" r="3"/><circle cx="12" cy="12" r="8"/><line x1="12" y1="2" x2="12" y2="4"/><line x1="12" y1="20" x2="12" y2="22"/><line x1="2" y1="12" x2="4" y2="12"/><line x1="20" y1="12" x2="22" y2="12"/>
+              </svg>
+            )},
+            { id: 'dashboard', title: 'Insights', icon: (
+              <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
+                <polyline points="22 12 18 12 15 21 9 3 6 12 2 12"/>
+              </svg>
+            )},
+            { id: 'settings', title: 'Settings', icon: (
+              <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
+                <circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83-2.83l.06-.06A1.65 1.65 0 0 0 4.68 15a1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 2.83-2.83l.06.06A1.65 1.65 0 0 0 9 4.68a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 2.83l-.06.06A1.65 1.65 0 0 0 19.4 9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z"/>
+              </svg>
+            )},
+          ].map(item => (
+            <button key={item.id} onClick={() => { setNavContext(item.id); goToSection(item.id) }} title={item.title}
+              style={{
+                width: 56, padding: '8px 4px', borderRadius: 4, display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', gap: 3,
+                background: parentSection === item.id || section === item.id ? 'rgba(139,92,246,0.35)' : 'none',
+                border: parentSection === item.id || section === item.id ? '1.5px solid rgba(139,92,246,0.6)' : '1.5px solid transparent',
+                color: parentSection === item.id || section === item.id ? '#fff' : 'rgba(255,255,255,0.55)',
+                cursor: 'pointer', transition: 'all 0.15s',
+              }}
+              onMouseEnter={e => { if (parentSection !== item.id && section !== item.id) { e.currentTarget.style.background = 'rgba(139,92,246,0.15)'; e.currentTarget.style.color = 'rgba(255,255,255,0.85)' } }}
+              onMouseLeave={e => { if (parentSection !== item.id && section !== item.id) { e.currentTarget.style.background = 'none'; e.currentTarget.style.color = 'rgba(255,255,255,0.55)' } }}>
+              {item.icon}
+              <span style={{ fontSize: 9, fontWeight: 500, letterSpacing: '0.01em', lineHeight: 1 }}>{item.title}</span>
+            </button>
+          ))}
+        </nav>
+
+        {/* Secondary sidebar for Contacts */}
+        {(section === 'contacts' || parentSection === 'contacts') && (
+          <div style={{ width: 180, background: '#fff', borderRight: '1px solid #EBECF0', display: 'flex', flexDirection: 'column', paddingTop: 8, flexShrink: 0, overflowY: 'auto' }}>
+            {[
+              { id: 'contacts', label: 'People', icon: <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg> },
+              { id: 'organizations', label: 'Organizations', icon: <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8"><rect x="3" y="3" width="18" height="18" rx="2"/><path d="M9 3v18"/><path d="M3 9h6"/><path d="M3 15h6"/></svg> },
+            ].map(sub => (
+              <button key={sub.id} onClick={() => { setNavContext('contacts'); goToSection(sub.id) }}
+                style={{
+                  display: 'flex', alignItems: 'center', gap: 8, padding: '8px 14px', border: 'none',
+                  background: section === sub.id ? '#EDE9FE' : 'transparent',
+                  color: section === sub.id ? '#6d28d9' : '#5E6C84',
+                  fontSize: 12, fontWeight: section === sub.id ? 600 : 400,
+                  cursor: 'pointer', textAlign: 'left', borderLeft: section === sub.id ? '3px solid #7c3aed' : '3px solid transparent',
+                }}
+                onMouseEnter={e => { if (section !== sub.id) e.currentTarget.style.background = '#F9FAFB' }}
+                onMouseLeave={e => { if (section !== sub.id) e.currentTarget.style.background = 'transparent' }}>
+                {sub.icon}
+                {sub.label}
+              </button>
+            ))}
+            <div style={{ margin: '10px 14px 4px', fontSize: 10, fontWeight: 700, color: '#97A0AF', textTransform: 'uppercase', letterSpacing: '0.06em' }}>Tools</div>
+            {[
+              { label: 'Contacts timeline', icon: <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#5E6C84" strokeWidth="1.8"><circle cx="12" cy="12" r="9"/><polyline points="12 7 12 12 15 15"/></svg> },
+              { label: 'Merge duplicates', icon: <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#5E6C84" strokeWidth="1.8"><path d="M8 6h13M8 12h13M8 18h13M3 6h.01M3 12h.01M3 18h.01"/></svg> },
+            ].map(tool => (
+              <button key={tool.label} onClick={() => { if (tool.label === 'Contacts timeline') { setNavContext('contacts'); goToSection('contacts-timeline') } }}
+                style={{ display: 'flex', alignItems: 'center', gap: 8, padding: '7px 14px', border: 'none', background: section === 'contacts-timeline' && tool.label === 'Contacts timeline' ? '#EDE9FE' : 'transparent', color: section === 'contacts-timeline' && tool.label === 'Contacts timeline' ? '#6d28d9' : '#5E6C84', fontSize: 11, cursor: 'pointer', textAlign: 'left', borderLeft: section === 'contacts-timeline' && tool.label === 'Contacts timeline' ? '3px solid #7c3aed' : '3px solid transparent', fontWeight: section === 'contacts-timeline' && tool.label === 'Contacts timeline' ? 600 : 400 }}
+                onMouseEnter={e => { if (!(section === 'contacts-timeline' && tool.label === 'Contacts timeline')) e.currentTarget.style.background = '#F9FAFB' }}
+                onMouseLeave={e => { if (!(section === 'contacts-timeline' && tool.label === 'Contacts timeline')) e.currentTarget.style.background = 'transparent' }}>
+                {tool.icon}
+                {tool.label}
+              </button>
+            ))}
+          </div>
         )}
-        {/* F16: card field customization */}
-        {view === 'kanban' && (
+
+        {/* Secondary sidebar for Leads */}
+        {section === 'leads' && (
+          <div style={{ width: 180, background: '#fff', borderRight: '1px solid #EBECF0', display: 'flex', flexDirection: 'column', paddingTop: 8, flexShrink: 0, overflowY: 'auto' }}>
+            <button onClick={() => goToSection('leads')}
+              style={{ display: 'flex', alignItems: 'center', gap: 8, padding: '8px 14px', border: 'none', background: '#EDE9FE', color: '#6d28d9', fontSize: 12, fontWeight: 600, cursor: 'pointer', textAlign: 'left', borderLeft: '3px solid #7c3aed' }}>
+              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8"><rect x="3" y="3" width="18" height="14" rx="2"/><path d="M3 9h18"/></svg>
+              Leads Inbox
+            </button>
+            <div style={{ margin: '10px 14px 4px', fontSize: 10, fontWeight: 700, color: '#97A0AF', textTransform: 'uppercase', letterSpacing: '0.06em' }}>Lead Capture</div>
+            <button onClick={() => { setSettingsTab('forms'); goToSection('settings') }}
+              style={{ display: 'flex', alignItems: 'center', gap: 8, padding: '7px 14px', border: 'none', background: 'transparent', color: '#5E6C84', fontSize: 11, cursor: 'pointer', textAlign: 'left', borderLeft: '3px solid transparent' }}
+              onMouseEnter={e => e.currentTarget.style.background = '#F9FAFB'}
+              onMouseLeave={e => e.currentTarget.style.background = 'transparent'}>
+              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8"><rect x="3" y="3" width="18" height="18" rx="2"/><path d="M9 3v18"/><path d="M14 9l3 3-3 3"/></svg>
+              Web Forms
+            </button>
+            <button onClick={() => setLeadsImportOpen(true)}
+              style={{ display: 'flex', alignItems: 'center', gap: 8, padding: '7px 14px', border: 'none', background: 'transparent', color: '#5E6C84', fontSize: 11, cursor: 'pointer', textAlign: 'left', borderLeft: '3px solid transparent' }}
+              onMouseEnter={e => e.currentTarget.style.background = '#F9FAFB'}
+              onMouseLeave={e => e.currentTarget.style.background = 'transparent'}>
+              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8"><rect x="3" y="3" width="18" height="18" rx="2"/><path d="M9 3v18"/><path d="M14 9l3 3-3 3"/></svg>
+              Import Leads
+            </button>
+            <div style={{ margin: '10px 14px 4px', fontSize: 10, fontWeight: 700, color: '#97A0AF', textTransform: 'uppercase', letterSpacing: '0.06em' }}>Scoring</div>
+            <button onClick={() => { setSettingsTab('scoring'); goToSection('settings') }}
+              style={{ display: 'flex', alignItems: 'center', gap: 8, padding: '7px 14px', border: 'none', background: 'transparent', color: '#5E6C84', fontSize: 11, cursor: 'pointer', textAlign: 'left', borderLeft: '3px solid transparent' }}
+              onMouseEnter={e => e.currentTarget.style.background = '#F9FAFB'}
+              onMouseLeave={e => e.currentTarget.style.background = 'transparent'}>
+              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8"><polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"/></svg>
+              Lead Scoring
+            </button>
+          </div>
+        )}
+
+        {/* Secondary sidebar for Insights */}
+        {parentSection === 'insights' && (
+          <div style={{ width: 180, background: '#fff', borderRight: '1px solid #EBECF0', display: 'flex', flexDirection: 'column', paddingTop: 8, flexShrink: 0, overflowY: 'auto' }}>
+            <div style={{ margin: '0 14px 6px', fontSize: 10, fontWeight: 700, color: '#97A0AF', textTransform: 'uppercase', letterSpacing: '0.06em', display: 'flex', alignItems: 'center', gap: 6 }}>
+              <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><rect x="3" y="3" width="7" height="7"/><rect x="14" y="3" width="7" height="7"/><rect x="3" y="14" width="7" height="7"/><rect x="14" y="14" width="7" height="7"/></svg>
+              Dashboards
+            </div>
+            <button onClick={() => goToSection('dashboard')}
+              style={{ display: 'flex', alignItems: 'center', gap: 8, padding: '7px 14px 7px 24px', border: 'none', background: section === 'dashboard' ? '#EDE9FE' : 'transparent', color: section === 'dashboard' ? '#6d28d9' : '#5E6C84', fontSize: 11, fontWeight: section === 'dashboard' ? 600 : 400, cursor: 'pointer', textAlign: 'left' }}
+              onMouseEnter={e => { if (section !== 'dashboard') e.currentTarget.style.background = '#F9FAFB' }}
+              onMouseLeave={e => { if (section !== 'dashboard') e.currentTarget.style.background = 'transparent' }}>
+              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8"><polyline points="9 18 15 12 9 6"/></svg>
+              My dashboards
+            </button>
+
+            <div style={{ margin: '10px 14px 4px', fontSize: 10, fontWeight: 700, color: '#97A0AF', textTransform: 'uppercase', letterSpacing: '0.06em', display: 'flex', alignItems: 'center', gap: 6 }}>
+              <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><circle cx="12" cy="12" r="10"/><path d="M12 6v6l4 2"/></svg>
+              Goals
+            </div>
+            <div style={{ padding: '5px 14px 5px 24px', fontSize: 11, color: '#97A0AF' }}>Pipeline goals</div>
+
+            <div style={{ margin: '10px 14px 4px', fontSize: 10, fontWeight: 700, color: '#97A0AF', textTransform: 'uppercase', letterSpacing: '0.06em', display: 'flex', alignItems: 'center', gap: 6 }}>
+              <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><line x1="18" y1="20" x2="18" y2="10"/><line x1="12" y1="20" x2="12" y2="4"/><line x1="6" y1="20" x2="6" y2="14"/></svg>
+              Reports
+            </div>
+            <button onClick={() => goToSection('dashboard')}
+              style={{ display: 'flex', alignItems: 'center', gap: 8, padding: '7px 14px 7px 24px', border: 'none', background: 'transparent', color: '#5E6C84', fontSize: 11, cursor: 'pointer', textAlign: 'left' }}
+              onMouseEnter={e => e.currentTarget.style.background = '#F9FAFB'}
+              onMouseLeave={e => e.currentTarget.style.background = 'transparent'}>
+              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8"><polyline points="9 18 15 12 9 6"/></svg>
+              My reports
+            </button>
+          </div>
+        )}
+
+        {/* Main content column */}
+        <div style={{ flex: 1, display: 'flex', flexDirection: 'column', overflow: 'hidden', position: 'relative' }}>
+
+      {/* ── Pipeline toolbar (pipeline only) ── */}
+      {section === 'pipeline' && (
+        <div style={{ background: '#fff', borderBottom: '1px solid #EBECF0', padding: '0 16px', height: 38, display: 'flex', alignItems: 'center', gap: 4, flexShrink: 0 }}>
+          {/* Pipeline selector */}
+          {pipelines.length > 0 && (
+            <>
+              <select
+                value={activePipelineId || ''}
+                onChange={e => setActivePipelineId(e.target.value ? parseInt(e.target.value) : null)}
+                style={{ padding: '4px 8px', border: '1.5px solid #DFE1E6', borderRadius: 4, fontSize: 11, fontWeight: 600, color: '#172B4D', background: '#fff', cursor: 'pointer', maxWidth: 160 }}
+              >
+                <option value="">Default Pipeline</option>
+                {pipelines.map(p => <option key={p.id} value={p.id}>{p.name}</option>)}
+              </select>
+              <div style={{ width: 1, height: 20, background: '#DFE1E6', margin: '0 6px' }} />
+            </>
+          )}
+          {/* View toggles */}
+          {['kanban', 'list', 'analytics'].map(v => (
+            <button key={v} onClick={() => setView(v)}
+              style={{ padding: '6px 10px', borderRadius: 2, border: 'none', background: 'transparent', color: view === v ? '#172B4D' : '#5E6C84', fontSize: 12, fontWeight: view === v ? 600 : 400, cursor: 'pointer', borderBottom: view === v ? '2px solid #0052CC' : '2px solid transparent', marginBottom: -1, display: 'flex', alignItems: 'center', gap: 4 }}>
+              {v === 'kanban' ? 'Board' : v === 'list' ? 'List' : 'Analytics'}
+            </button>
+          ))}
+
+          <div style={{ width: 1, height: 20, background: '#DFE1E6', margin: '0 6px' }} />
+
+          {/* Filter toggle */}
+          <button onClick={() => setShowFilterBar(f => !f)}
+            style={{ padding: '6px 10px', borderRadius: 2, border: 'none', background: showFilterBar ? '#F4F5F7' : 'transparent', color: showFilterBar ? '#172B4D' : '#5E6C84', fontSize: 12, fontWeight: showFilterBar ? 600 : 400, cursor: 'pointer' }}>
+            Filter
+          </button>
+
+          {/* Forecast column toggle */}
+          <button onClick={() => setShowForecast(f => !f)}
+            style={{ padding: '6px 10px', borderRadius: 2, border: 'none', background: showForecast ? '#F4F5F7' : 'transparent', color: showForecast ? '#172B4D' : '#5E6C84', fontSize: 12, fontWeight: showForecast ? 600 : 400, cursor: 'pointer' }}>
+            Forecast
+          </button>
+
+          {/* Heatmap cycle */}
+          <button onClick={() => setHeatmapMode(m => m === null ? 'value' : m === 'value' ? 'probability' : m === 'probability' ? 'age' : null)}
+            style={{ padding: '6px 10px', borderRadius: 2, border: 'none', background: heatmapMode ? '#F4F5F7' : 'transparent', color: heatmapMode ? '#172B4D' : '#5E6C84', fontSize: 12, fontWeight: heatmapMode ? 600 : 400, cursor: 'pointer' }}>
+            {heatmapMode ? `Heat: ${heatmapMode}` : 'Heatmap'}
+          </button>
+
+          <div style={{ width: 1, height: 20, background: '#DFE1E6', margin: '0 6px' }} />
+
+          {/* Card fields dropdown */}
           <div style={{ position: 'relative' }}>
-            <button onClick={() => setShowCardFields(s => !s)}
-              style={{ ...topBtn, background: showCardFields ? 'rgba(255,255,255,0.2)' : 'rgba(255,255,255,0.06)', borderColor: showCardFields ? 'rgba(255,255,255,0.3)' : 'transparent' }}
-              onMouseEnter={e => { if (!showCardFields) { e.currentTarget.style.background = 'rgba(255,255,255,0.14)'; e.currentTarget.style.borderColor = 'rgba(255,255,255,0.2)' } }}
-              onMouseLeave={e => { if (!showCardFields) { e.currentTarget.style.background = 'rgba(255,255,255,0.06)'; e.currentTarget.style.borderColor = 'transparent' } }}>
-              ⚙ Card
+            <button onMouseDown={e => e.stopPropagation()} onClick={() => setShowCardFields(f => !f)}
+              style={{ padding: '6px 10px', borderRadius: 2, border: 'none', background: showCardFields ? '#F4F5F7' : 'transparent', color: showCardFields ? '#172B4D' : '#5E6C84', fontSize: 12, fontWeight: showCardFields ? 600 : 400, cursor: 'pointer' }}>
+              Card Fields
             </button>
             {showCardFields && (
-              <div style={{ position: 'absolute', top: '100%', right: 0, zIndex: 100, background: '#fff', border: '1px solid #DFE1E6', borderRadius: 8, boxShadow: '0 6px 20px rgba(9,30,66,0.14)', minWidth: 160, padding: '8px 0', marginTop: 4 }}
-                onMouseLeave={() => setShowCardFields(false)}>
-                <div style={{ padding: '4px 12px', fontSize: 10, fontWeight: 700, color: '#97A0AF', textTransform: 'uppercase', letterSpacing: '0.05em' }}>Card fields</div>
-                {[
-                  { key: 'contact', label: 'Contact' },
-                  { key: 'nextAction', label: 'Next action' },
-                  { key: 'tags', label: 'Tags' },
-                  { key: 'assignedTo', label: 'Assigned to' },
-                  { key: 'score', label: 'Weighted score' },
-                  { key: 'probability', label: 'Probability %' },
-                ].map(({ key, label }) => (
-                  <button key={key} onClick={() => toggleCardField(key)}
-                    style={{ display: 'flex', alignItems: 'center', gap: 8, width: '100%', padding: '5px 12px', background: 'none', border: 'none', cursor: 'pointer', fontSize: 11, color: '#172B4D', textAlign: 'left' }}
-                    onMouseEnter={e => e.currentTarget.style.background = '#F4F5F7'}
-                    onMouseLeave={e => e.currentTarget.style.background = 'transparent'}>
-                    <span style={{ width: 14, fontSize: 12, color: cardVis[key] ? '#36B37E' : '#C1C7D0' }}>{cardVis[key] ? '✓' : '○'}</span>
-                    {label}
-                  </button>
-                ))}
-              </div>
+              <>
+                <div onClick={() => setShowCardFields(false)} style={{ position: 'fixed', inset: 0, zIndex: 98 }} />
+                <div style={{ position: 'absolute', top: '100%', left: 0, marginTop: 4, background: '#fff', border: '1px solid #DFE1E6', borderRadius: 2, boxShadow: '0 4px 12px rgba(9,30,66,0.12)', padding: 6, zIndex: 99, minWidth: 160 }}>
+                  {[{ key: 'contact', label: 'Contact' }, { key: 'nextAction', label: 'Next Action' }, { key: 'tags', label: 'Tags' }, { key: 'assignedTo', label: 'Assigned To' }, { key: 'score', label: 'Score' }, { key: 'probability', label: 'Probability' }].map(f => (
+                    <label key={f.key} style={{ display: 'flex', alignItems: 'center', gap: 6, padding: '5px 8px', fontSize: 12, color: '#172B4D', cursor: 'pointer', borderRadius: 2 }}
+                      onMouseEnter={e => e.currentTarget.style.background = '#F4F5F7'} onMouseLeave={e => e.currentTarget.style.background = 'none'}>
+                      <input type="checkbox" checked={!!cardVis[f.key]} onChange={() => toggleCardField(f.key)} style={{ accentColor: '#0052CC' }} />
+                      {f.label}
+                    </label>
+                  ))}
+                </div>
+              </>
             )}
           </div>
-        )}
-        <div style={{ width: 1, height: 16, background: 'rgba(255,255,255,0.25)' }} />
-        <button onClick={() => setTemplateModal(true)}
-          style={{ ...topBtn, background: 'rgba(255,255,255,0.06)' }}
-          onMouseEnter={e => { e.currentTarget.style.background = 'rgba(255,255,255,0.14)'; e.currentTarget.style.borderColor = 'rgba(255,255,255,0.2)' }}
-          onMouseLeave={e => { e.currentTarget.style.background = 'rgba(255,255,255,0.06)'; e.currentTarget.style.borderColor = 'transparent' }}>
-          📧 Templates
-        </button>
-        {/* F12: CSV import */}
-        <input ref={csvInputRef} type="file" accept=".csv" style={{ display: 'none' }} onChange={handleCsvImport} />
-        <button onClick={() => csvInputRef.current?.click()} disabled={csvImporting}
-          style={{ ...topBtn, background: 'rgba(255,255,255,0.06)', opacity: csvImporting ? 0.6 : 1 }}
-          onMouseEnter={e => { if (!csvImporting) { e.currentTarget.style.background = 'rgba(255,255,255,0.14)'; e.currentTarget.style.borderColor = 'rgba(255,255,255,0.2)' } }}
-          onMouseLeave={e => { e.currentTarget.style.background = 'rgba(255,255,255,0.06)'; e.currentTarget.style.borderColor = 'transparent' }}>
-          {csvImporting ? '⏳ Importing…' : '⬆ Import CSV'}
-        </button>
-        <button onClick={() => openNew()} style={{ background: '#fff', color: '#0747A6', border: 'none', borderRadius: 5, padding: '5px 14px', fontWeight: 700, fontSize: 12, cursor: 'pointer' }}
-          onMouseEnter={e => e.currentTarget.style.background = '#DEEBFF'}
-          onMouseLeave={e => e.currentTarget.style.background = '#fff'}>
-          + New Deal
-        </button>
-      </div>
 
-      {/* ── Stats bar ── */}
-      <div style={{ background: '#fff', borderBottom: '1px solid #EBECF0', display: 'flex', flexShrink: 0, overflowX: 'auto' }}>
-        {[
-          { label: 'Pipeline',         value: fmt$(pipeline),         sub: `${active.length} active` },
-          { label: 'Forecast',          value: fmt$(forecast),         sub: 'weighted value' },
-          { label: 'Won This Month',    value: wonMonth.length,        sub: fmt$(wonMonth.reduce((s, d) => s + parseFloat(d.deal_value || 0), 0)) },
-          { label: 'Win Rate',          value: `${winRate}%`,          sub: `${wonDeals.length}W · ${lostDeals.length}L` },
-          { label: 'Follow-ups Due',    value: followUpsDue || '—',    sub: 'reminders',            alert: followUpsDue > 0 },
-          { label: 'Avg Close (days)',  value: avgDaysToWin ?? '—',    sub: 'lead → won' },
-        ].map((s, i) => (
-          <div key={s.label} style={{ padding: '12px 20px', borderRight: i < 5 ? '1px solid #EBECF0' : 'none', minWidth: 120, flexShrink: 0, borderLeft: s.alert ? '3px solid #DE350B' : '3px solid transparent' }}>
-            <div style={{ fontSize: 10, fontWeight: 600, color: '#97A0AF', textTransform: 'uppercase', letterSpacing: '0.06em', marginBottom: 2 }}>{s.label}</div>
-            <div style={{ fontSize: 16, fontWeight: 700, color: s.alert ? '#DE350B' : '#172B4D', lineHeight: 1.2 }}>{s.value}</div>
-            <div style={{ fontSize: 11, color: '#6B778C', marginTop: 1 }}>{s.sub}</div>
+          <div style={{ flex: 1 }} />
+
+          {/* Templates */}
+          <button onClick={() => { setSettingsTab('pipeline-templates'); goToSection('settings') }}
+            style={{ padding: '6px 10px', borderRadius: 2, border: 'none', background: 'transparent', color: '#5E6C84', fontSize: 12, fontWeight: 400, cursor: 'pointer' }}>
+            Import Template
+          </button>
+
+          {/* CSV Import */}
+          <input type="file" accept=".csv" ref={csvInputRef} onChange={handleCsvImport} style={{ display: 'none' }} />
+          <button onClick={downloadDealsTemplate}
+            style={{ padding: '6px 10px', borderRadius: 2, border: 'none', background: 'transparent', color: '#5E6C84', fontSize: 12, fontWeight: 400, cursor: 'pointer' }}>
+            ↓ Template
+          </button>
+          <button onClick={() => csvInputRef.current?.click()} disabled={csvImporting}
+            style={{ padding: '6px 10px', borderRadius: 2, border: 'none', background: 'transparent', color: '#5E6C84', fontSize: 12, fontWeight: 400, cursor: 'pointer', opacity: csvImporting ? 0.5 : 1 }}>
+            Import CSV
+          </button>
+
+          {/* Stages */}
+          <button onClick={() => setStageManagerOpen(true)}
+            style={{ padding: '6px 10px', borderRadius: 2, border: 'none', background: 'transparent', color: '#5E6C84', fontSize: 12, fontWeight: 400, cursor: 'pointer' }}>
+            Stages
+          </button>
+
+          {/* New Deal */}
+          <button onClick={() => openNew()}
+            style={{ padding: '5px 12px', borderRadius: 2, border: 'none', background: '#0052CC', color: '#fff', fontSize: 12, fontWeight: 600, cursor: 'pointer' }}>
+            + New Deal
+          </button>
+        </div>
+      )}
+
+      {/* ── Bulk action bar ── */}
+      {selectedIds.size > 0 && section === 'pipeline' && (
+        <div style={{ background: '#172B4D', padding: '8px 16px', display: 'flex', alignItems: 'center', gap: 10, flexShrink: 0 }}>
+          <span style={{ fontSize: 12, fontWeight: 700, color: '#fff' }}>{selectedIds.size} selected</span>
+          <select onChange={e => { if (e.target.value) bulkMoveStage(e.target.value); e.target.value = '' }} disabled={bulkLoading}
+            style={{ fontSize: 11, padding: '4px 8px', borderRadius: 2, border: 'none', background: '#253858', color: '#fff', cursor: 'pointer' }}>
+            <option value="">Move to…</option>
+            {visibleStages.map(s => <option key={s.id} value={s.id}>{s.label}</option>)}
+          </select>
+          <div style={{ display: 'flex', alignItems: 'center', gap: 4 }}>
+            <input placeholder="Assign to…" onKeyDown={e => { if (e.key === 'Enter') { bulkAssign(e.target.value); e.target.value = '' } }}
+              style={{ fontSize: 11, padding: '4px 8px', borderRadius: 2, border: 'none', background: '#253858', color: '#fff', width: 100 }} />
           </div>
-        ))}
-        {/* F19: Monthly goal progress */}
-        {(() => {
-          const goal = goals.find(g => g.period_key === thisMonth)
-          if (!goal) return (
-            <button onClick={() => { setGoalForm({ target_value: '', target_count: '' }); setGoalModal(true) }}
-              style={{ padding: '12px 16px', border: 'none', borderLeft: '1px solid #EBECF0', background: 'none', cursor: 'pointer', minWidth: 110, flexShrink: 0, color: '#97A0AF', fontSize: 11 }}>
-              + Set monthly goal
-            </button>
-          )
-          const pctVal = goal.target_value > 0 ? Math.min(100, Math.round(wonMonth.reduce((s, d) => s + parseFloat(d.deal_value || 0), 0) / goal.target_value * 100)) : null
-          const pctCnt = goal.target_count > 0 ? Math.min(100, Math.round(wonMonth.length / goal.target_count * 100)) : null
-          return (
-            <div onClick={() => { setGoalForm({ target_value: goal.target_value, target_count: goal.target_count }); setGoalModal(true) }}
-              style={{ padding: '12px 16px', borderLeft: '1px solid #EBECF0', minWidth: 150, flexShrink: 0, cursor: 'pointer' }}>
-              <div style={{ display: 'flex', alignItems: 'center', gap: 4, fontSize: 10, fontWeight: 600, color: '#97A0AF', textTransform: 'uppercase', letterSpacing: '0.06em', marginBottom: 4 }}>
-                Monthly Goal <span style={{ fontSize: 9, color: '#C1C7D0' }}>✎</span>
-              </div>
-              {pctVal !== null && (
-                <div style={{ marginBottom: 4 }}>
-                  <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: 10, color: '#5E6C84', marginBottom: 2 }}>
-                    <span>Revenue</span><span style={{ fontWeight: 700, color: pctVal >= 100 ? '#006644' : '#172B4D' }}>{pctVal}%</span>
-                  </div>
-                  <div style={{ height: 5, background: '#F4F5F7', borderRadius: 3 }}>
-                    <div style={{ height: '100%', width: `${pctVal}%`, background: pctVal >= 100 ? '#36B37E' : '#0052CC', borderRadius: 3, transition: 'width 0.4s' }} />
-                  </div>
-                </div>
-              )}
-              {pctCnt !== null && (
-                <div>
-                  <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: 10, color: '#5E6C84', marginBottom: 2 }}>
-                    <span>Deals</span><span style={{ fontWeight: 700, color: pctCnt >= 100 ? '#006644' : '#172B4D' }}>{pctCnt}%</span>
-                  </div>
-                  <div style={{ height: 5, background: '#F4F5F7', borderRadius: 3 }}>
-                    <div style={{ height: '100%', width: `${pctCnt}%`, background: pctCnt >= 100 ? '#36B37E' : '#6554C0', borderRadius: 3, transition: 'width 0.4s' }} />
-                  </div>
-                </div>
-              )}
-            </div>
-          )
-        })()}
-      </div>
+          <button onClick={bulkExportCsv} disabled={bulkLoading}
+            style={{ fontSize: 11, padding: '4px 10px', borderRadius: 2, border: 'none', background: '#0052CC', color: '#fff', cursor: 'pointer', fontWeight: 600 }}>
+            ↓ CSV
+          </button>
+          <button onClick={bulkDelete} disabled={bulkLoading}
+            style={{ fontSize: 11, padding: '4px 10px', borderRadius: 2, border: 'none', background: '#BF2600', color: '#fff', cursor: 'pointer', fontWeight: 600 }}>
+            Delete
+          </button>
+          <button onClick={() => setSelectedIds(new Set())}
+            style={{ fontSize: 11, padding: '4px 8px', borderRadius: 2, border: '1px solid rgba(255,255,255,0.3)', background: 'none', color: 'rgba(255,255,255,0.7)', cursor: 'pointer', marginLeft: 'auto' }}>
+            × Deselect
+          </button>
+        </div>
+      )}
 
-      {error && <div style={{ padding: '8px 20px', background: '#FFEBE6', color: '#BF2600', fontSize: 12, flexShrink: 0 }}>{error}</div>}
+      {section === 'pipeline' && error && <div style={{ padding: '8px 20px', background: '#FFEBE6', color: '#BF2600', fontSize: 12, flexShrink: 0 }}>{error}</div>}
 
       {/* ── F9: Search & filter bar ── */}
       {showFilterBar && (
@@ -992,13 +1321,13 @@ export default function CRMPage() {
           />
           <select value={filterStage} onChange={e => setFilterStage(e.target.value)} style={srchInput}>
             <option value="">All stages</option>
-            {STAGES.map(s => <option key={s.id} value={s.id}>{s.label}</option>)}
+            {visibleStages.map(s => <option key={s.id} value={s.id}>{s.label}</option>)}
           </select>
           <input value={filterMin} onChange={e => setFilterMin(e.target.value)} placeholder="Min $" type="number" style={{ ...srchInput, width: 80 }} />
           <input value={filterMax} onChange={e => setFilterMax(e.target.value)} placeholder="Max $" type="number" style={{ ...srchInput, width: 80 }} />
           {(searchQuery || filterStage || filterMin || filterMax) && (
             <button onClick={() => { setSearchQuery(''); setFilterStage(''); setFilterMin(''); setFilterMax('') }}
-              style={{ fontSize: 11, color: '#BF2600', background: '#FFEBE6', border: '1px solid #FFBDAD', borderRadius: 5, padding: '4px 8px', cursor: 'pointer', fontWeight: 600 }}>
+              style={{ fontSize: 11, color: '#BF2600', background: '#FFEBE6', border: '1px solid #FFBDAD', borderRadius: 2, padding: '4px 8px', cursor: 'pointer', fontWeight: 600 }}>
               Clear
             </button>
           )}
@@ -1008,11 +1337,11 @@ export default function CRMPage() {
               <input value={newViewName} onChange={e => setNewViewName(e.target.value)} placeholder="View name…"
                 onKeyDown={e => { if (e.key === 'Enter') saveCurrentView(); if (e.key === 'Escape') setSavingView(false) }}
                 style={{ ...srchInput, width: 130 }} autoFocus />
-              <button onClick={saveCurrentView} style={{ fontSize: 11, background: '#0052CC', color: '#fff', border: 'none', borderRadius: 5, padding: '5px 10px', cursor: 'pointer', fontWeight: 600 }}>Save</button>
-              <button onClick={() => setSavingView(false)} style={{ fontSize: 11, background: '#fff', border: '1.5px solid #DFE1E6', borderRadius: 5, padding: '4px 8px', cursor: 'pointer', color: '#6B778C' }}>✕</button>
+              <button onClick={saveCurrentView} style={{ fontSize: 11, background: '#0052CC', color: '#fff', border: 'none', borderRadius: 2, padding: '5px 10px', cursor: 'pointer', fontWeight: 600 }}>Save</button>
+              <button onClick={() => setSavingView(false)} style={{ fontSize: 11, background: '#fff', border: '1px solid #DFE1E6', borderRadius: 2, padding: '4px 8px', cursor: 'pointer', color: '#6B778C' }}>✕</button>
             </div>
           ) : (
-            <button onClick={() => setSavingView(true)} style={{ fontSize: 11, color: '#0052CC', background: '#EFF6FF', border: '1px solid #DEEBFF', borderRadius: 5, padding: '4px 10px', cursor: 'pointer', fontWeight: 600 }}>
+            <button onClick={() => setSavingView(true)} style={{ fontSize: 11, color: '#0052CC', background: '#EFF6FF', border: '1px solid #DEEBFF', borderRadius: 2, padding: '4px 10px', cursor: 'pointer', fontWeight: 600 }}>
               💾 Save view
             </button>
           )}
@@ -1021,7 +1350,7 @@ export default function CRMPage() {
             <div style={{ display: 'flex', gap: 4, flexWrap: 'wrap', alignItems: 'center' }}>
               <span style={{ fontSize: 10, color: '#97A0AF', fontWeight: 600 }}>Views:</span>
               {savedViews.map(v => (
-                <div key={v.name} style={{ display: 'flex', alignItems: 'center', gap: 2, background: '#DEEBFF', borderRadius: 10, padding: '2px 6px 2px 8px', fontSize: 11, border: '1px solid #B3D4FF' }}>
+                <div key={v.name} style={{ display: 'flex', alignItems: 'center', gap: 2, background: '#F4F5F7', borderRadius: 2, padding: '2px 6px 2px 8px', fontSize: 11, border: '1px solid #DFE1E6' }}>
                   <button onClick={() => loadView(v)} style={{ background: 'none', border: 'none', cursor: 'pointer', fontSize: 11, color: '#0052CC', fontWeight: 600, padding: 0 }}>{v.name}</button>
                   <button onClick={() => deleteView(v.name)} style={{ background: 'none', border: 'none', cursor: 'pointer', fontSize: 10, color: '#4C9AFF', padding: '0 2px', lineHeight: 1 }}
                     onMouseEnter={e => e.currentTarget.style.color = '#BF2600'}
@@ -1030,8 +1359,8 @@ export default function CRMPage() {
               ))}
             </div>
           )}
-          {filteredDeals.length !== deals.length && (
-            <span style={{ fontSize: 11, color: '#6B778C', marginLeft: 4 }}>{filteredDeals.length} of {deals.length} deals</span>
+          {filteredDeals.length !== visibleDeals.length && (
+            <span style={{ fontSize: 11, color: '#6B778C', marginLeft: 4 }}>{filteredDeals.length} of {visibleDeals.length} deals</span>
           )}
         </div>
       )}
@@ -1040,13 +1369,13 @@ export default function CRMPage() {
       <div style={{ flex: 1, display: 'flex', overflow: 'hidden' }}>
 
         {/* ── Kanban (feature 1, 2, 4, 9, 14) ── */}
-        {view === 'kanban' && (
-          <div style={{ flex: 1, overflowX: 'auto', overflowY: 'auto', padding: 16 }}>
+        {section === 'pipeline' && view === 'kanban' && (
+          <div onClick={() => { if (followUpQuick) setFollowUpQuick(null) }} style={{ flex: 1, overflowX: 'auto', overflowY: 'auto', padding: 16 }}>
             {loading ? (
               <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', height: 200, color: '#6B778C', fontSize: 13 }}>Loading deals…</div>
             ) : (
               <div style={{ display: 'flex', gap: 10, minWidth: 'max-content', alignItems: 'flex-start' }}>
-                {STAGES.map(stage => {
+                {visibleStages.map(stage => {
                   const sd = filteredDeals.filter(d => d.stage === stage.id)
                   const sv = sd.reduce((s, d) => s + parseFloat(d.deal_value || 0), 0)
                   const iso = dragOverStage === stage.id
@@ -1055,11 +1384,12 @@ export default function CRMPage() {
                       onDragOver={e => onDragOver(e, stage.id)}
                       onDragLeave={onDragLeave}
                       onDrop={e => onDrop(e, stage.id)}
-                      style={{ width: 232, flexShrink: 0, background: iso ? stage.bg : '#F7F8FA', borderRadius: 6, border: `1px solid ${iso ? stage.border : '#EBECF0'}`, borderTop: `3px solid ${iso ? stage.border : stage.color}`, transition: 'border-color 0.15s, background 0.15s', minHeight: 180 }}>
+                      style={{ width: 240, flexShrink: 0, background: iso ? stage.bg : '#FAFBFC', borderRadius: 2, border: `1px solid ${iso ? stage.border : '#EBECF0'}`, borderTop: `2px solid ${iso ? stage.border : stage.color}`, transition: 'border-color 0.15s, background 0.15s', minHeight: 180 }}>
                       {/* Column header */}
                       <div style={{ padding: '8px 10px 5px', display: 'flex', alignItems: 'center', gap: 5 }}>
-                        <span style={{ fontSize: 11, fontWeight: 700, color: stage.color, flex: 1 }}>{stage.label}</span>
-                        <span style={{ fontSize: 11, fontWeight: 700, color: stage.color, marginRight: 2 }}>{sd.length}</span>
+                        <span style={{ fontSize: 11, fontWeight: 700, color: '#44546F', flex: 1 }}>{stage.label}</span>
+                        {(() => { const staleCount = sd.filter(d => agingInfo(d)).length; return staleCount > 0 ? <span style={{ fontSize: 9, color: '#FF5630', fontWeight: 600, background: '#FFEBE6', borderRadius: 3, padding: '1px 4px' }}>{staleCount} stale</span> : null })()}
+                        <span style={{ fontSize: 11, fontWeight: 700, color: '#5E6C84', marginRight: 2 }}>{sd.length}</span>
                       </div>
                       {sv > 0 && <div style={{ padding: '0 10px 6px', fontSize: 10, color: '#5E6C84', fontWeight: 600 }}>{fmt$(sv)}</div>}
 
@@ -1095,19 +1425,38 @@ export default function CRMPage() {
                               onDragEnd={() => setDragId(null)}
                               onClick={() => isPanelOpen ? closePanel() : openPanel(deal)}
                               style={{
-                                background: heatBg || (aging ? aging.bg : '#fff'),
-                                borderRadius: 6,
-                                border: `1px solid ${aging ? aging.border : isPanelOpen ? '#0052CC' : '#EBECF0'}`,
-                                borderLeft: `3px solid ${aging?.level === 'critical' ? '#FF5630' : aging?.level === 'warning' ? '#FFAB00' : isPanelOpen ? '#0052CC' : stage.color}`,
+                                position: 'relative',
+                                background: heatBg || (aging?.level === 'critical' ? '#FFF5F4' : aging?.level === 'warning' ? '#FFFDF0' : '#fff'),
+                                borderRadius: 2,
+                                border: `1px solid ${aging?.level === 'critical' ? '#FF8F73' : aging?.level === 'warning' ? '#FFE380' : isPanelOpen ? '#0052CC' : '#EBECF0'}`,
+                                borderLeft: `2px solid ${aging?.level === 'critical' ? '#FF5630' : aging?.level === 'warning' ? '#FFAB00' : isPanelOpen ? '#0052CC' : stage.color}`,
                                 padding: '10px 12px', cursor: 'pointer',
-                                boxShadow: isPanelOpen ? '0 0 0 2px #DEEBFF' : '0 1px 3px rgba(9,30,66,0.08)',
-                                opacity: dragId === deal.id ? 0.4 : 1,
-                                transition: 'box-shadow 0.12s',
+                                boxShadow: selectedIds.has(deal.id) ? '0 0 0 1px #0052CC' : isPanelOpen ? '0 0 0 1px #4C9AFF' : 'none',
+                                opacity: dragId === deal.id ? 0.4 : aging?.level === 'critical' ? 0.85 : 1,
+                                filter: aging?.level === 'critical' ? 'saturate(0.75)' : 'none',
+                                transition: 'box-shadow 0.12s, opacity 0.2s',
                                 userSelect: 'none',
+                                overflow: 'hidden',
                               }}
-                              onMouseEnter={e => { if (!isPanelOpen) e.currentTarget.style.boxShadow = '0 2px 8px rgba(9,30,66,0.12)' }}
-                              onMouseLeave={e => { if (!isPanelOpen) e.currentTarget.style.boxShadow = '0 1px 3px rgba(9,30,66,0.08)' }}
+                              onMouseEnter={e => { if (!isPanelOpen) e.currentTarget.style.boxShadow = '0 1px 4px rgba(9,30,66,0.08)' }}
+                              onMouseLeave={e => { if (!isPanelOpen) e.currentTarget.style.boxShadow = 'none' }}
                             >
+                              {/* Rot strip */}
+                              {aging && (
+                                <div style={{
+                                  position: 'absolute', top: 0, left: 0, right: 0, height: 3,
+                                  borderRadius: '2px 2px 0 0',
+                                  background: aging.level === 'critical' ? 'linear-gradient(90deg, #FF5630, #FF8F73)' : 'linear-gradient(90deg, #FFAB00, #FFE380)',
+                                  animation: aging.level === 'critical' ? 'pulse-rot 2s infinite' : 'none',
+                                }} />
+                              )}
+                              {/* Bulk select checkbox */}
+                              <input type="checkbox" checked={selectedIds.has(deal.id)}
+                                onChange={e => toggleSelect(deal.id, e)}
+                                onClick={e => e.stopPropagation()}
+                                style={{ position: 'absolute', top: 6, right: 6, width: 14, height: 14, cursor: 'pointer', accentColor: '#0052CC', opacity: selectedIds.size > 0 || undefined, zIndex: 2 }}
+                                className="deal-bulk-check"
+                              />
                               {/* Company + value */}
                               <div style={{ display: 'flex', justifyContent: 'space-between', gap: 6, marginBottom: 4 }}>
                                 <div style={{ display: 'flex', alignItems: 'baseline', gap: 5, flex: 1, minWidth: 0 }}>
@@ -1219,15 +1568,21 @@ export default function CRMPage() {
                               )}
                               {/* Aging alert (feature 1) */}
                               {aging && (
-                                <div style={{ fontSize: 9, color: aging.level === 'critical' ? '#BF2600' : '#974F0C', marginTop: 3 }}>
-                                  {aging.level === 'critical' ? '🔴' : '🟡'} No update in {aging.days}d
+                                <div style={{
+                                  fontSize: 10, marginTop: 4, padding: '3px 8px', borderRadius: 2,
+                                  background: aging.level === 'critical' ? '#FFEBE6' : '#FFFAE6',
+                                  border: `1px solid ${aging.level === 'critical' ? '#FF8F73' : '#FFE380'}`,
+                                  color: aging.level === 'critical' ? '#BF2600' : '#974F0C',
+                                  fontWeight: 600, display: 'flex', alignItems: 'center', gap: 4,
+                                }}>
+                                  {aging.level === 'critical' ? '🔴' : '🟠'} Stale {aging.days}d — needs attention
                                 </div>
                               )}
                             </div>
                           )
                         })}
                         <button onClick={() => openNew(stage.id)}
-                          style={{ width: '100%', padding: '6px', background: 'none', border: '1.5px dashed #C1C7D0', borderRadius: 6, color: '#97A0AF', cursor: 'pointer', fontSize: 11 }}
+                          style={{ width: '100%', padding: '6px', background: 'none', border: '1px dashed #C1C7D0', borderRadius: 2, color: '#97A0AF', cursor: 'pointer', fontSize: 11 }}
                           onMouseEnter={e => { e.currentTarget.style.borderColor = stage.color; e.currentTarget.style.color = stage.color; e.currentTarget.style.background = stage.bg + '60' }}
                           onMouseLeave={e => { e.currentTarget.style.borderColor = '#C1C7D0'; e.currentTarget.style.color = '#97A0AF'; e.currentTarget.style.background = 'none' }}>
                           + Add
@@ -1236,6 +1591,40 @@ export default function CRMPage() {
                     </div>
                   )
                 })}
+                {/* Orphaned deals column — stages not in visibleStages */}
+                {(() => {
+                  const knownIds = new Set(visibleStages.map(s => s.id))
+                  const orphaned = filteredDeals.filter(d => !knownIds.has(d.stage) && d.stage !== 'won' && d.stage !== 'lost')
+                  if (orphaned.length === 0) return null
+                  return (
+                    <div style={{ width: 240, flexShrink: 0, background: '#FAFBFC', borderRadius: 2, border: '1px solid #EBECF0', borderTop: '2px solid #97A0AF', minHeight: 180 }}>
+                      <div style={{ padding: '8px 10px 5px', display: 'flex', alignItems: 'center', gap: 5 }}>
+                        <span style={{ fontSize: 11, fontWeight: 700, color: '#44546F', flex: 1 }}>Other</span>
+                        <span style={{ fontSize: 11, fontWeight: 700, color: '#5E6C84', marginRight: 2 }}>{orphaned.length}</span>
+                      </div>
+                      <div style={{ padding: '0 6px 6px', display: 'flex', flexDirection: 'column', gap: 5 }}>
+                        {orphaned.map(deal => (
+                          <div key={deal.id} draggable
+                            onDragStart={e => { e.dataTransfer.setData('text/plain', deal.id); setDraggingDealId(deal.id) }}
+                            onDragEnd={() => setDraggingDealId(null)}
+                            onClick={() => panelDeal?.id === deal.id ? closePanel() : openPanel(deal)}
+                            style={{ background: panelDeal?.id === deal.id ? '#E6F0FF' : '#fff', borderRadius: 3, padding: '8px 10px', border: '1px solid #EBECF0', cursor: 'pointer', fontSize: 11 }}
+                            onMouseEnter={e => { if (panelDeal?.id !== deal.id) e.currentTarget.style.boxShadow = '0 1px 4px rgba(9,30,66,0.15)' }}
+                            onMouseLeave={e => { e.currentTarget.style.boxShadow = 'none' }}>
+                            <div style={{ fontWeight: 700, color: '#172B4D', marginBottom: 4, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+                              {deal.company_name}
+                              {deal.node_key && <span style={{ fontSize: 9, color: '#2563EB', fontWeight: 700, fontFamily: 'monospace', background: '#EFF6FF', border: '1px solid #BFDBFE', borderRadius: 2, padding: '0 4px', marginLeft: 5 }}>{deal.node_key}</span>}
+                            </div>
+                            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                              <span style={{ background: '#F4F5F7', color: '#5E6C84', border: '1px solid #DFE1E6', borderRadius: 3, padding: '1px 5px', fontSize: 9, fontWeight: 600 }}>{deal.stage}</span>
+                              {parseFloat(deal.deal_value) > 0 && <span style={{ fontWeight: 700, color: '#0052CC' }}>{fmt$(deal.deal_value)}</span>}
+                            </div>
+                          </div>
+                        ))}
+                      </div>
+                    </div>
+                  )
+                })()}
               </div>
             )}
           </div>
@@ -1259,11 +1648,11 @@ export default function CRMPage() {
                 </div>
                 {closingThisMonth.length > 0 && (
                   <div style={{ marginTop: 6, display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 4 }}>
-                    <div style={{ background: '#DEEBFF', borderRadius: 4, padding: '4px 8px' }}>
+                    <div style={{ background: '#DEEBFF', borderRadius: 2, padding: '4px 8px' }}>
                       <div style={{ fontSize: 9, color: '#0052CC', fontWeight: 600, textTransform: 'uppercase' }}>Total</div>
                       <div style={{ fontSize: 13, fontWeight: 700, color: '#0052CC' }}>{fmt$(totalValue)}</div>
                     </div>
-                    <div style={{ background: '#E3FCEF', borderRadius: 4, padding: '4px 8px' }}>
+                    <div style={{ background: '#E3FCEF', borderRadius: 2, padding: '4px 8px' }}>
                       <div style={{ fontSize: 9, color: '#006644', fontWeight: 600, textTransform: 'uppercase' }}>Weighted</div>
                       <div style={{ fontSize: 13, fontWeight: 700, color: '#006644' }}>{fmt$(weightedValue)}</div>
                     </div>
@@ -1274,7 +1663,7 @@ export default function CRMPage() {
                 <div style={{ padding: 16, fontSize: 11, color: '#97A0AF', textAlign: 'center' }}>No deals closing this month.</div>
               )}
               {closingThisMonth.map(d => {
-                const st = STAGE_MAP[d.stage]
+                const st = stageMap[d.stage] || { bg: '#F4F5F7', color: '#5E6C84', border: '#DFE1E6', label: d.stage || '—' }
                 const daysLeft = Math.ceil((new Date(d.expected_close_date) - Date.now()) / 86_400_000)
                 return (
                   <div key={d.id} onClick={() => openPanel(d)}
@@ -1298,9 +1687,9 @@ export default function CRMPage() {
         })()}
 
         {/* ── List view (feature 19) ── */}
-        {view === 'list' && (
+        {section === 'pipeline' && view === 'list' && (
           <div style={{ flex: 1, overflow: 'auto', padding: 16 }}>
-            <table style={{ width: '100%', borderCollapse: 'collapse', background: '#fff', borderRadius: 8, overflow: 'hidden', boxShadow: '0 1px 3px rgba(9,30,66,0.08)', fontSize: 12 }}>
+            <table style={{ width: '100%', borderCollapse: 'collapse', background: '#fff', borderRadius: 2, overflow: 'hidden', border: '1px solid #EBECF0', fontSize: 12 }}>
               <thead>
                 <tr style={{ background: '#F4F5F7', borderBottom: '2px solid #EBECF0' }}>
                   {[
@@ -1325,7 +1714,7 @@ export default function CRMPage() {
               </thead>
               <tbody>
                 {sortedDeals.map((deal, i) => {
-                  const st = STAGE_MAP[deal.stage]
+                  const st = stageMap[deal.stage] || { bg: '#F4F5F7', color: '#5E6C84', border: '#DFE1E6', label: deal.stage || '—' }
                   const fu = followUpInfo(deal)
                   const aging = agingInfo(deal)
                   return (
@@ -1337,7 +1726,7 @@ export default function CRMPage() {
                         <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
                           {deal.company_name}
                           {deal.node_key && (
-                            <span style={{ fontSize: 10, color: '#2563EB', fontWeight: 700, fontFamily: 'monospace', background: '#EFF6FF', border: '1px solid #BFDBFE', borderRadius: 4, padding: '1px 5px', flexShrink: 0 }}>
+                            <span style={{ fontSize: 10, color: '#2563EB', fontWeight: 700, fontFamily: 'monospace', background: '#EFF6FF', border: '1px solid #BFDBFE', borderRadius: 2, padding: '1px 5px', flexShrink: 0 }}>
                               {deal.node_key}
                             </span>
                           )}
@@ -1367,7 +1756,7 @@ export default function CRMPage() {
         )}
 
         {/* ── Analytics view (features 15–18) ── */}
-        {view === 'analytics' && (
+        {section === 'pipeline' && view === 'analytics' && (
           <div style={{ flex: 1, overflow: 'auto', padding: 16, display: 'flex', flexDirection: 'column', gap: 16 }}>
             {/* Headline stats */}
             <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: 12 }}>
@@ -1377,7 +1766,7 @@ export default function CRMPage() {
                 { label: 'Win Rate', value: `${winRate}%`, sub: `${wonDeals.length + lostDeals.length} closed`, color: '#0052CC' },
                 { label: 'Avg Days to Win', value: avgDaysToWin ?? '—', sub: 'sales cycle length', color: '#6554C0' },
               ].map(s => (
-                <div key={s.label} style={{ background: '#fff', border: '1px solid #EBECF0', borderRadius: 8, padding: '16px 18px', borderTop: `3px solid ${s.color}` }}>
+                <div key={s.label} style={{ background: '#fff', border: '1px solid #EBECF0', borderRadius: 2, padding: '16px 18px', borderTop: `2px solid ${s.color}` }}>
                   <div style={{ fontSize: 10, fontWeight: 700, color: '#97A0AF', textTransform: 'uppercase', letterSpacing: '0.06em', marginBottom: 6 }}>{s.label}</div>
                   <div style={{ fontSize: 24, fontWeight: 800, color: s.color, lineHeight: 1 }}>{s.value}</div>
                   <div style={{ fontSize: 11, color: '#6B778C', marginTop: 4 }}>{s.sub}</div>
@@ -1387,7 +1776,7 @@ export default function CRMPage() {
 
             <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 16 }}>
               {/* Feature 17: Monthly revenue chart */}
-              <div style={{ background: '#fff', border: '1px solid #EBECF0', borderRadius: 8, padding: '16px 18px' }}>
+              <div style={{ background: '#fff', border: '1px solid #EBECF0', borderRadius: 2, padding: '16px 18px' }}>
                 <div style={{ fontSize: 12, fontWeight: 700, color: '#172B4D', marginBottom: 16 }}>Monthly Revenue Won</div>
                 <div style={{ display: 'flex', alignItems: 'flex-end', gap: 8, height: 100 }}>
                   {months6.map(m => {
@@ -1395,7 +1784,7 @@ export default function CRMPage() {
                     return (
                       <div key={m.key} style={{ flex: 1, display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 4 }}>
                         {m.value > 0 && <span style={{ fontSize: 9, color: '#0052CC', fontWeight: 600 }}>{fmt$(m.value)}</span>}
-                        <div style={{ width: '100%', background: m.value > 0 ? '#0052CC' : '#EBECF0', borderRadius: '3px 3px 0 0', height: `${Math.max(pct * 70, m.value > 0 ? 4 : 2)}px`, transition: 'height 0.3s', opacity: m.value > 0 ? 1 : 0.5 }} />
+                        <div style={{ width: '100%', background: m.value > 0 ? '#0052CC' : '#EBECF0', borderRadius: '2px 2px 0 0', height: `${Math.max(pct * 70, m.value > 0 ? 4 : 2)}px`, transition: 'height 0.3s', opacity: m.value > 0 ? 1 : 0.5 }} />
                         <span style={{ fontSize: 10, color: '#97A0AF' }}>{m.label}</span>
                       </div>
                     )
@@ -1404,7 +1793,7 @@ export default function CRMPage() {
               </div>
 
               {/* Feature 15: Win/Loss analysis */}
-              <div style={{ background: '#fff', border: '1px solid #EBECF0', borderRadius: 8, padding: '16px 18px' }}>
+              <div style={{ background: '#fff', border: '1px solid #EBECF0', borderRadius: 2, padding: '16px 18px' }}>
                 <div style={{ fontSize: 12, fontWeight: 700, color: '#172B4D', marginBottom: 12 }}>Win / Loss Analysis</div>
                 <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
                   {/* By deal size buckets */}
@@ -1420,9 +1809,9 @@ export default function CRMPage() {
                     return (
                       <div key={bucket.label} style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
                         <span style={{ fontSize: 11, color: '#5E6C84', width: 70, flexShrink: 0 }}>{bucket.label}</span>
-                        <div style={{ flex: 1, height: 14, background: '#F4F5F7', borderRadius: 7, overflow: 'hidden', position: 'relative' }}>
+                        <div style={{ flex: 1, height: 14, background: '#F4F5F7', borderRadius: 2, overflow: 'hidden', position: 'relative' }}>
                           {total > 0 && (
-                            <div style={{ width: `${rate}%`, height: '100%', background: '#36B37E', borderRadius: 7 }} />
+                            <div style={{ width: `${rate}%`, height: '100%', background: '#36B37E', borderRadius: 2 }} />
                           )}
                         </div>
                         <span style={{ fontSize: 11, color: '#172B4D', fontWeight: 600, width: 36, textAlign: 'right', flexShrink: 0 }}>
@@ -1454,7 +1843,7 @@ export default function CRMPage() {
 
             {/* Feature 16: Sales velocity + Feature 18: Performance */}
             <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 16 }}>
-              <div style={{ background: '#fff', border: '1px solid #EBECF0', borderRadius: 8, padding: '16px 18px' }}>
+              <div style={{ background: '#fff', border: '1px solid #EBECF0', borderRadius: 2, padding: '16px 18px' }}>
                 <div style={{ fontSize: 12, fontWeight: 700, color: '#172B4D', marginBottom: 12 }}>Sales Velocity</div>
                 <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
                   {[
@@ -1472,7 +1861,7 @@ export default function CRMPage() {
               </div>
 
               {/* Feature 18: Rep leaderboard (personal performance) */}
-              <div style={{ background: '#fff', border: '1px solid #EBECF0', borderRadius: 8, padding: '16px 18px' }}>
+              <div style={{ background: '#fff', border: '1px solid #EBECF0', borderRadius: 2, padding: '16px 18px' }}>
                 <div style={{ fontSize: 12, fontWeight: 700, color: '#172B4D', marginBottom: 12 }}>My Performance</div>
                 {['This Month', 'Last Month', 'This Quarter'].map((period, pi) => {
                   const [start, end] = periodRange(period, now)
@@ -1494,11 +1883,11 @@ export default function CRMPage() {
             </div>
 
             {/* Stage pipeline breakdown */}
-            <div style={{ background: '#fff', border: '1px solid #EBECF0', borderRadius: 8, padding: '16px 18px' }}>
+            <div style={{ background: '#fff', border: '1px solid #EBECF0', borderRadius: 2, padding: '16px 18px' }}>
               <div style={{ fontSize: 12, fontWeight: 700, color: '#172B4D', marginBottom: 12 }}>Pipeline by Stage</div>
               <div style={{ display: 'flex', gap: 0 }}>
-                {STAGES.filter(s => !['won', 'lost'].includes(s.id)).map(stage => {
-                  const sd = deals.filter(d => d.stage === stage.id)
+                {visibleStages.filter(s => !s.is_won && !s.is_lost).map(stage => {
+                  const sd = visibleDeals.filter(d => d.stage === stage.id)
                   const sv = sd.reduce((s, d) => s + parseFloat(d.deal_value || 0), 0)
                   return (
                     <div key={stage.id} style={{ flex: 1, padding: '0 12px 0 0' }}>
@@ -1513,11 +1902,66 @@ export default function CRMPage() {
           </div>
         )}
 
-        {/* ── Right panel (features 7, 8, 11, 12, 13) ── */}
-        {panelOpen && (
-          <div style={{ width: 380, flexShrink: 0, background: '#fff', borderLeft: '1px solid #EBECF0', display: 'flex', flexDirection: 'column', overflow: 'hidden', boxShadow: '-2px 0 12px rgba(9,30,66,0.08)' }}>
+        {/* ── Dashboard section ── */}
+        {section === 'dashboard' && (
+          <DashboardHub stages={stages} onNavigate={sec => goToSection(sec)} />
+        )}
+        {/* ── Contacts section ── */}
+        {section === 'contacts' && (
+          <ContactsSection
+            stages={stages}
+            deals={deals}
+            onOpenDeal={d => { goToSection('pipeline'); openPanel(d) }}
+            addPersonOpen={addPersonOpen}
+            onAddPersonClose={() => { setAddPersonOpen(false); setAddPersonInitial(null) }}
+            addPersonInitial={addPersonInitial}
+          />
+        )}
+        {/* ── Organizations section ── */}
+        {section === 'organizations' && (
+          <OrganizationsSection
+            stages={stages}
+            deals={deals}
+            addOrgOpen={addOrgOpen}
+            onAddOrgClose={() => setAddOrgOpen(false)}
+            onOpenAddContact={initial => { setAddPersonInitial(initial); setAddPersonOpen(true); goToSection('contacts') }}
+          />
+        )}
+        {section === 'leads' && <LeadsSection stages={stages} deals={deals} importOpenProp={leadsImportOpen} onImportClose={() => setLeadsImportOpen(false)} />}
+        {/* ── Meetings section ── */}
+        {section === 'meetings' && <MeetingsCalendar />}
+        {/* ── Contacts Timeline section ── */}
+        {section === 'contacts-timeline' && <ContactsTimeline />}
+        {/* ── Setup Guide section ── */}
+        {section === 'setup' && <CRMSetupGuide onNavigate={(action) => {
+          if (action === 'contacts') goToSection('contacts')
+          else if (action === 'meetings') goToSection('meetings')
+          else if (action === 'new-deal') { goToSection('pipeline'); openNew() }
+          else if (action === 'stages') { goToSection('pipeline'); setStageManagerOpen(true) }
+          else if (action === 'dashboard') goToSection('dashboard')
+          else if (action === 'forecast') goToSection('dashboard')
+          else if (action === 'winloss') goToSection('dashboard')
+          else if (action === 'settings-pipeline-templates') { setSettingsTab('pipeline-templates'); goToSection('settings') }
+          else if (action.startsWith('settings-')) goToSection('settings')
+          else goToSection('pipeline')
+        }} />}
+        {/* ── Settings section ── */}
+        {section === 'settings' && <CRMSettings initialTab={settingsTab} />}
+
+        {/* ── Deal detail full page (features 7, 8, 11, 12, 13) ── */}
+        {section === 'pipeline' && panelOpen && (
+          <div style={{ position: 'absolute', inset: 0, background: '#fff', display: 'flex', flexDirection: 'column', overflow: 'hidden', zIndex: 10 }}>
             {/* Panel header */}
-            <div style={{ padding: '14px 16px 0', flexShrink: 0 }}>
+            <div style={{ padding: '14px 24px 0', flexShrink: 0, borderBottom: '1px solid #EBECF0' }}>
+              <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 10 }}>
+                <button onClick={closePanel}
+                  style={{ background: 'none', border: 'none', cursor: 'pointer', padding: '4px 8px', fontSize: 12, color: '#5E6C84', display: 'flex', alignItems: 'center', gap: 4, borderRadius: 2 }}
+                  onMouseEnter={e => e.currentTarget.style.background = '#F4F5F7'}
+                  onMouseLeave={e => e.currentTarget.style.background = 'none'}>
+                  <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round"><polyline points="15 18 9 12 15 6"/></svg>
+                  Back to pipeline
+                </button>
+              </div>
               <div style={{ display: 'flex', alignItems: 'flex-start', gap: 8, marginBottom: 8 }}>
                 <div style={{ flex: 1, minWidth: 0 }}>
                   <button
@@ -1531,8 +1975,8 @@ export default function CRMPage() {
                     </div>
                   </button>
                   <div style={{ display: 'flex', alignItems: 'center', gap: 6, marginTop: 4 }}>
-                    <span style={{ background: STAGE_MAP[panelDeal.stage]?.bg, color: STAGE_MAP[panelDeal.stage]?.color, border: `1px solid ${STAGE_MAP[panelDeal.stage]?.border}`, borderRadius: 4, padding: '2px 7px', fontSize: 11, fontWeight: 600 }}>
-                      {STAGE_MAP[panelDeal.stage]?.label}
+                    <span style={{ background: stageMap[panelDeal.stage]?.bg, color: stageMap[panelDeal.stage]?.color, border: `1px solid ${stageMap[panelDeal.stage]?.border}`, borderRadius: 2, padding: '2px 7px', fontSize: 11, fontWeight: 600 }}>
+                      {stageMap[panelDeal.stage]?.label}
                     </span>
                     {parseFloat(panelDeal.deal_value) > 0 && (
                       <span style={{ fontSize: 13, fontWeight: 700, color: '#172B4D' }}>{fmt$(panelDeal.deal_value)}</span>
@@ -1544,51 +1988,68 @@ export default function CRMPage() {
                     )}
                   </div>
                 </div>
-                <div style={{ display: 'flex', gap: 4, flexShrink: 0, alignItems: 'center' }}>
+                <div style={{ display: 'flex', gap: 6, flexShrink: 0, alignItems: 'center' }}>
                   <button
                     onClick={() => panelDeal.node_id
-                      ? navigate('/app', { state: { focusNodeId: panelDeal.node_id } })
+                      ? navigate('/app/canvas', { state: { focusNodeId: panelDeal.node_id } })
                       : setCanvasPicker({ deal: panelDeal })}
                     title={panelDeal.node_id ? 'Open linked canvas node' : 'Create node on canvas for this deal'}
-                    style={{ background: '#F0FDF4', border: '1px solid #86EFAC', borderRadius: 6, cursor: 'pointer', padding: '6px 12px', fontSize: 13, fontWeight: 600, color: '#15803D', lineHeight: 1, whiteSpace: 'nowrap' }}
+                    style={{ background: '#F0FDF4', border: '1px solid #86EFAC', borderRadius: 2, cursor: 'pointer', padding: '5px 10px', fontSize: 11, fontWeight: 600, color: '#15803D', lineHeight: 1, whiteSpace: 'nowrap' }}
                     onMouseEnter={e => { e.currentTarget.style.background = '#DCFCE7' }}
                     onMouseLeave={e => { e.currentTarget.style.background = '#F0FDF4' }}
                   >
-                    {panelDeal.node_id ? '⬡ Canvas' : '⬡ Link Canvas'}
+                    {panelDeal.node_id ? 'Canvas' : 'Link Canvas'}
                   </button>
                   {panelDeal.node_key && (
                     <span
                       title="Canvas node ID — click to copy"
                       onClick={() => { try { navigator.clipboard.writeText(panelDeal.node_key) } catch {} }}
-                      style={{ fontFamily: 'monospace', fontWeight: 700, fontSize: 11, color: '#2563EB', background: '#EFF6FF', border: '1px solid #BFDBFE', borderRadius: 4, padding: '3px 7px', cursor: 'pointer', letterSpacing: '0.04em', whiteSpace: 'nowrap' }}
+                      style={{ fontFamily: 'monospace', fontWeight: 700, fontSize: 10, color: '#2563EB', background: '#EFF6FF', border: '1px solid #BFDBFE', borderRadius: 2, padding: '3px 7px', cursor: 'pointer', letterSpacing: '0.04em', whiteSpace: 'nowrap' }}
                     >
                       {panelDeal.node_key}
                     </span>
                   )}
-                  {panelDeal.node_id && (
-                    <button
-                      onClick={() => handleUnlinkCanvas(panelDeal)}
-                      title="Unlink canvas node"
-                      style={panelActionBtn()}
-                      onMouseEnter={e => { e.currentTarget.style.color = '#BF2600'; e.currentTarget.style.background = '#FFEBE6' }}
-                      onMouseLeave={e => { e.currentTarget.style.color = '#97A0AF'; e.currentTarget.style.background = 'none' }}
-                    >⊘</button>
-                  )}
-                  <button onClick={() => openEdit(panelDeal)} style={panelActionBtn('#0052CC', '#EFF6FF')} title="Edit deal"
-                    onMouseEnter={e => { e.currentTarget.style.color = '#0052CC'; e.currentTarget.style.background = '#EFF6FF' }}
-                    onMouseLeave={e => { e.currentTarget.style.color = '#97A0AF'; e.currentTarget.style.background = 'none' }}>
-                    ✎
+                  {/* Star indicator */}
+                  <button onClick={() => toggleStarDeal(panelDeal)} title={panelDeal.starred ? 'Unstar' : 'Star'}
+                    style={{ padding: '4px 6px', background: 'none', border: 'none', fontSize: 15, color: panelDeal.starred ? '#FF8B00' : '#DFE1E6', cursor: 'pointer', lineHeight: 1 }}>
+                    {panelDeal.starred ? '★' : '☆'}
                   </button>
-                  <button onClick={() => setDeleteConfirm(panelDeal.id)} style={panelActionBtn('#BF2600', '#FFF5F5')} title="Delete deal"
-                    onMouseEnter={e => { e.currentTarget.style.color = '#BF2600'; e.currentTarget.style.background = '#FFEBE6' }}
-                    onMouseLeave={e => { e.currentTarget.style.color = '#97A0AF'; e.currentTarget.style.background = 'none' }}>
-                    🗑
-                  </button>
-                  <button onClick={closePanel} style={panelActionBtn('#5E6C84', '#F4F5F7')} title="Close panel"
-                    onMouseEnter={e => { e.currentTarget.style.color = '#5E6C84'; e.currentTarget.style.background = '#F4F5F7' }}
-                    onMouseLeave={e => { e.currentTarget.style.color = '#97A0AF'; e.currentTarget.style.background = 'none' }}>
-                    ×
-                  </button>
+                  {/* Three-dot actions menu */}
+                  <div style={{ position: 'relative' }}>
+                    <button onClick={() => setDealActionsOpen(o => !o)}
+                      style={{ padding: '4px 8px', background: dealActionsOpen ? '#F4F5F7' : 'none', border: '1px solid #DFE1E6', borderRadius: 2, fontSize: 16, color: '#5E6C84', cursor: 'pointer', lineHeight: 1 }}
+                    >&#8943;</button>
+                    {dealActionsOpen && (
+                      <>
+                        <div style={{ position: 'fixed', inset: 0, zIndex: 99 }} onClick={() => setDealActionsOpen(false)} />
+                        <div style={{ position: 'absolute', top: '100%', right: 0, marginTop: 4, background: '#fff', border: '1px solid #DFE1E6', borderRadius: 2, boxShadow: '0 4px 12px rgba(9,30,66,0.12)', zIndex: 100, minWidth: 160, padding: '4px 0' }}>
+                          <button onClick={() => { setDealActionsOpen(false); openEdit(panelDeal) }}
+                            style={{ display: 'block', width: '100%', textAlign: 'left', padding: '8px 14px', background: 'none', border: 'none', fontSize: 12, color: '#172B4D', cursor: 'pointer' }}
+                            onMouseEnter={e => { e.currentTarget.style.background = '#F4F5F7' }}
+                            onMouseLeave={e => { e.currentTarget.style.background = 'none' }}>Edit deal</button>
+                          <button onClick={() => { setDealActionsOpen(false); cloneDeal(panelDeal) }}
+                            style={{ display: 'block', width: '100%', textAlign: 'left', padding: '8px 14px', background: 'none', border: 'none', fontSize: 12, color: '#172B4D', cursor: 'pointer' }}
+                            onMouseEnter={e => { e.currentTarget.style.background = '#F4F5F7' }}
+                            onMouseLeave={e => { e.currentTarget.style.background = 'none' }}>Clone deal</button>
+                          <button onClick={() => { setDealActionsOpen(false); toggleStarDeal(panelDeal) }}
+                            style={{ display: 'block', width: '100%', textAlign: 'left', padding: '8px 14px', background: 'none', border: 'none', fontSize: 12, color: panelDeal.starred ? '#FF8B00' : '#172B4D', cursor: 'pointer' }}
+                            onMouseEnter={e => { e.currentTarget.style.background = '#F4F5F7' }}
+                            onMouseLeave={e => { e.currentTarget.style.background = 'none' }}>{panelDeal.starred ? 'Remove star' : 'Star deal'}</button>
+                          {panelDeal.node_id && (
+                            <button onClick={() => { setDealActionsOpen(false); handleUnlinkCanvas(panelDeal) }}
+                              style={{ display: 'block', width: '100%', textAlign: 'left', padding: '8px 14px', background: 'none', border: 'none', fontSize: 12, color: '#172B4D', cursor: 'pointer' }}
+                              onMouseEnter={e => { e.currentTarget.style.background = '#F4F5F7' }}
+                              onMouseLeave={e => { e.currentTarget.style.background = 'none' }}>Unlink canvas</button>
+                          )}
+                          <div style={{ height: 1, background: '#EBECF0', margin: '4px 0' }} />
+                          <button onClick={() => { setDealActionsOpen(false); setDeleteConfirm(panelDeal.id) }}
+                            style={{ display: 'block', width: '100%', textAlign: 'left', padding: '8px 14px', background: 'none', border: 'none', fontSize: 12, color: '#BF2600', cursor: 'pointer' }}
+                            onMouseEnter={e => { e.currentTarget.style.background = '#FFEBE6' }}
+                            onMouseLeave={e => { e.currentTarget.style.background = 'none' }}>Delete deal</button>
+                        </div>
+                      </>
+                    )}
+                  </div>
                 </div>
               </div>
 
@@ -1600,9 +2061,12 @@ export default function CRMPage() {
                   { id: 'activity',  label: `Activity${panelActivities.length ? ` (${panelActivities.length})` : ''}` },
                   { id: 'tasks',     label: `Tasks${pendingTasks.length ? ` · ${pendingTasks.length}${overdueTasks.length ? ' 🔴' : ''}` : ''}` },
                   { id: 'comments',  label: `Comments${panelComments.length ? ` (${panelComments.length})` : ''}` },
+                  { id: 'timeline',  label: 'Timeline' },
+                  { id: 'emails',    label: 'Emails' },
+                  { id: 'more',      label: 'More' },
                 ].map(tab => (
                   <button key={tab.id} onClick={() => setPanelTab(tab.id)}
-                    style={{ flex: 1, padding: '8px 6px', background: 'none', border: 'none', borderBottom: panelTab === tab.id ? '2px solid #0052CC' : '2px solid transparent', marginBottom: -2, color: panelTab === tab.id ? '#0052CC' : '#5E6C84', cursor: 'pointer', fontSize: 11, fontWeight: panelTab === tab.id ? 700 : 400, transition: 'color 0.1s', whiteSpace: 'nowrap' }}>
+                    style={{ padding: '8px 12px', background: 'none', border: 'none', borderBottom: panelTab === tab.id ? '2px solid #0052CC' : '2px solid transparent', marginBottom: -2, color: panelTab === tab.id ? '#0052CC' : '#5E6C84', cursor: 'pointer', fontSize: 12, fontWeight: panelTab === tab.id ? 600 : 400, transition: 'color 0.1s', whiteSpace: 'nowrap' }}>
                     {tab.label}
                   </button>
                 ))}
@@ -1613,21 +2077,21 @@ export default function CRMPage() {
             {panelLoading ? (
               <div style={{ flex: 1, display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#97A0AF', fontSize: 12 }}>Loading…</div>
             ) : (
-              <div style={{ flex: 1, overflowY: 'auto', padding: '12px 16px' }}>
+              <div style={{ flex: 1, overflowY: 'auto', padding: '16px 24px', maxWidth: 720 }}>
 
                 {/* Overview tab */}
                 {panelTab === 'overview' && (
                   <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
                     {/* Deal score (feature 2) */}
                     {dealScore(panelDeal) > 0 && (
-                      <div style={{ background: '#EFF6FF', border: '1px solid #BFDBFE', borderRadius: 6, padding: '8px 12px', display: 'flex', justifyContent: 'space-between' }}>
+                      <div style={{ background: '#EFF6FF', border: '1px solid #BFDBFE', borderRadius: 2, padding: '8px 12px', display: 'flex', justifyContent: 'space-between' }}>
                         <span style={{ fontSize: 11, color: '#1D4ED8' }}>Deal Score (weighted value)</span>
                         <span style={{ fontSize: 13, fontWeight: 700, color: '#1D4ED8' }}>{fmt$(dealScore(panelDeal))}</span>
                       </div>
                     )}
                     {/* Stage time (feature 4) */}
                     {stageTime(panelDeal) && (
-                      <div style={{ background: stageTime(panelDeal).over ? '#FFFAE6' : '#F4F5F7', border: `1px solid ${stageTime(panelDeal).over ? '#FFE380' : '#EBECF0'}`, borderRadius: 6, padding: '8px 12px', display: 'flex', justifyContent: 'space-between' }}>
+                      <div style={{ background: stageTime(panelDeal).over ? '#FFFAE6' : '#F4F5F7', border: `1px solid ${stageTime(panelDeal).over ? '#FFE380' : '#EBECF0'}`, borderRadius: 2, padding: '8px 12px', display: 'flex', justifyContent: 'space-between' }}>
                         <span style={{ fontSize: 11, color: '#5E6C84' }}>Time in current stage</span>
                         <span style={{ fontSize: 12, fontWeight: 700, color: stageTime(panelDeal).over ? '#974F0C' : '#172B4D' }}>
                           {stageTime(panelDeal).days}d {stageTime(panelDeal).over ? `⚠ avg is ${stageTime(panelDeal).bench}d` : `/ ${stageTime(panelDeal).bench}d avg`}
@@ -1661,7 +2125,7 @@ export default function CRMPage() {
                     {panelDeal.node_id && (
                       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
                         <span style={{ fontSize: 11, color: '#97A0AF', fontWeight: 600, textTransform: 'uppercase', letterSpacing: '0.06em' }}>Canvas Node</span>
-                        <button onClick={() => navigate('/app', { state: { focusNodeId: panelDeal.node_id } })}
+                        <button onClick={() => navigate('/app/canvas', { state: { focusNodeId: panelDeal.node_id } })}
                           style={{ fontSize: 11, color: '#6554C0', background: '#EAE6FF', border: 'none', borderRadius: 3, padding: '3px 8px', cursor: 'pointer' }}>
                           Open in Canvas ↗
                         </button>
@@ -1670,13 +2134,13 @@ export default function CRMPage() {
                     {panelDeal.next_action && (
                       <div>
                         <div style={{ fontSize: 10, fontWeight: 600, color: '#97A0AF', textTransform: 'uppercase', letterSpacing: '0.06em', marginBottom: 4 }}>Next Action</div>
-                        <div style={{ fontSize: 12, color: '#974F0C', background: '#FFFAE6', borderRadius: 5, padding: '7px 10px' }}>→ {panelDeal.next_action}</div>
+                        <div style={{ fontSize: 12, color: '#974F0C', background: '#FFFAE6', borderRadius: 2, padding: '7px 10px' }}>→ {panelDeal.next_action}</div>
                       </div>
                     )}
                     {panelDeal.notes && (
                       <div>
                         <div style={{ fontSize: 10, fontWeight: 600, color: '#97A0AF', textTransform: 'uppercase', letterSpacing: '0.06em', marginBottom: 4 }}>Notes</div>
-                        <div style={{ fontSize: 12, color: '#172B4D', background: '#F4F5F7', borderRadius: 5, padding: '7px 10px', lineHeight: 1.6, whiteSpace: 'pre-wrap' }}>{panelDeal.notes}</div>
+                        <div style={{ fontSize: 12, color: '#172B4D', background: '#F4F5F7', borderRadius: 2, padding: '7px 10px', lineHeight: 1.6, whiteSpace: 'pre-wrap' }}>{panelDeal.notes}</div>
                       </div>
                     )}
                   </div>
@@ -1705,7 +2169,7 @@ export default function CRMPage() {
                       <div style={{ fontSize: 12, color: '#97A0AF', padding: '16px 0' }}>No contacts yet.</div>
                     )}
                     {addingContact ? (
-                      <div style={{ marginTop: 8, background: '#F8F9FC', borderRadius: 6, padding: 10 }}>
+                      <div style={{ marginTop: 8, background: '#F8F9FC', borderRadius: 2, padding: 10 }}>
                         {[['name', 'Name *'], ['email', 'Email'], ['phone', 'Phone'], ['role', 'Role']].map(([k, lbl]) => (
                           <input key={k} placeholder={lbl} value={newContact[k]} onChange={e => setNewContact(p => ({ ...p, [k]: e.target.value }))}
                             style={{ ...miniInput, marginBottom: 5 }} />
@@ -1716,7 +2180,7 @@ export default function CRMPage() {
                         </div>
                       </div>
                     ) : (
-                      <button onClick={() => setAddingContact(true)} style={{ marginTop: 8, width: '100%', padding: '6px', background: 'none', border: '1.5px dashed #C1C7D0', borderRadius: 6, color: '#5E6C84', cursor: 'pointer', fontSize: 11 }}>
+                      <button onClick={() => setAddingContact(true)} style={{ marginTop: 8, width: '100%', padding: '6px', background: 'none', border: '1px dashed #C1C7D0', borderRadius: 2, color: '#5E6C84', cursor: 'pointer', fontSize: 11 }}>
                         + Add Contact
                       </button>
                     )}
@@ -1727,7 +2191,7 @@ export default function CRMPage() {
                 {panelTab === 'activity' && (
                   <div>
                     {addingActivity ? (
-                      <div style={{ marginBottom: 12, background: '#F8F9FC', borderRadius: 6, padding: 10 }}>
+                      <div style={{ marginBottom: 12, background: '#F8F9FC', borderRadius: 2, padding: 10 }}>
                         <div style={{ display: 'flex', gap: 4, marginBottom: 8 }}>
                           {ACT_TYPES.map(t => (
                             <button key={t.id} onClick={() => setNewActivity(p => ({ ...p, type: t.id }))}
@@ -1749,13 +2213,13 @@ export default function CRMPage() {
                               📋 Use template {emailTemplates.length > 0 ? `(${emailTemplates.length})` : ''}
                             </button>
                             {templatePicker && emailTemplates.length === 0 && (
-                              <div style={{ position: 'absolute', top: '100%', left: 0, zIndex: 50, background: '#fff', border: '1px solid #DFE1E6', borderRadius: 6, boxShadow: '0 4px 16px rgba(0,0,0,0.12)', minWidth: 200, padding: '8px 12px' }}>
+                              <div style={{ position: 'absolute', top: '100%', left: 0, zIndex: 50, background: '#fff', border: '1px solid #DFE1E6', borderRadius: 2, boxShadow: '0 4px 16px rgba(0,0,0,0.12)', minWidth: 200, padding: '8px 12px' }}>
                                 <div style={{ fontSize: 11, color: '#97A0AF' }}>No templates yet.</div>
                                 <button onClick={() => { setTemplatePicker(false); setTemplateModal(true) }} style={{ fontSize: 10, color: '#0052CC', background: 'none', border: 'none', cursor: 'pointer', padding: '4px 0' }}>+ Create one</button>
                               </div>
                             )}
                             {templatePicker && emailTemplates.length > 0 && (
-                              <div style={{ position: 'absolute', top: '100%', left: 0, zIndex: 50, background: '#fff', border: '1px solid #DFE1E6', borderRadius: 6, boxShadow: '0 4px 16px rgba(0,0,0,0.12)', minWidth: 220, maxHeight: 200, overflowY: 'auto' }}>
+                              <div style={{ position: 'absolute', top: '100%', left: 0, zIndex: 50, background: '#fff', border: '1px solid #DFE1E6', borderRadius: 2, boxShadow: '0 4px 16px rgba(0,0,0,0.12)', minWidth: 220, maxHeight: 200, overflowY: 'auto' }}>
                                 {emailTemplates.map(t => (
                                   <div key={t.id} onClick={() => applyTemplate(t)}
                                     style={{ padding: '7px 12px', cursor: 'pointer', borderBottom: '1px solid #F4F5F7' }}
@@ -1788,7 +2252,7 @@ export default function CRMPage() {
                         </div>
                       </div>
                     ) : (
-                      <button onClick={() => setAddingActivity(true)} style={{ width: '100%', padding: '6px', background: 'none', border: '1.5px dashed #C1C7D0', borderRadius: 6, color: '#5E6C84', cursor: 'pointer', fontSize: 11, marginBottom: 10 }}>
+                      <button onClick={() => setAddingActivity(true)} style={{ width: '100%', padding: '6px', background: 'none', border: '1px dashed #C1C7D0', borderRadius: 2, color: '#5E6C84', cursor: 'pointer', fontSize: 11, marginBottom: 10 }}>
                         + Log Activity
                       </button>
                     )}
@@ -1855,7 +2319,7 @@ export default function CRMPage() {
                       <div style={{ fontSize: 12, color: '#97A0AF', padding: '8px 0' }}>No tasks yet.</div>
                     )}
                     {addingTask ? (
-                      <div style={{ marginTop: 8, background: '#F8F9FC', borderRadius: 6, padding: 10 }}>
+                      <div style={{ marginTop: 8, background: '#F8F9FC', borderRadius: 2, padding: 10 }}>
                         <input placeholder="Task title *" value={newTask.title} onChange={e => setNewTask(p => ({ ...p, title: e.target.value }))}
                           style={{ ...miniInput, marginBottom: 5 }} />
                         <input type="date" placeholder="Due date (optional)" value={newTask.due_at} onChange={e => setNewTask(p => ({ ...p, due_at: e.target.value }))}
@@ -1866,7 +2330,7 @@ export default function CRMPage() {
                         </div>
                       </div>
                     ) : (
-                      <button onClick={() => setAddingTask(true)} style={{ marginTop: 8, width: '100%', padding: '6px', background: 'none', border: '1.5px dashed #C1C7D0', borderRadius: 6, color: '#5E6C84', cursor: 'pointer', fontSize: 11 }}>
+                      <button onClick={() => setAddingTask(true)} style={{ marginTop: 8, width: '100%', padding: '6px', background: 'none', border: '1px dashed #C1C7D0', borderRadius: 2, color: '#5E6C84', cursor: 'pointer', fontSize: 11 }}>
                         + Add Task
                       </button>
                     )}
@@ -1907,11 +2371,23 @@ export default function CRMPage() {
                         </div>
                       </div>
                     ) : (
-                      <button onClick={() => setAddingComment(true)} style={{ marginTop: 8, width: '100%', padding: '6px', background: 'none', border: '1.5px dashed #C1C7D0', borderRadius: 6, color: '#5E6C84', cursor: 'pointer', fontSize: 11 }}>
+                      <button onClick={() => setAddingComment(true)} style={{ marginTop: 8, width: '100%', padding: '6px', background: 'none', border: '1px dashed #C1C7D0', borderRadius: 2, color: '#5E6C84', cursor: 'pointer', fontSize: 11 }}>
                         + Add Comment
                       </button>
                     )}
                   </div>
+                )}
+
+                {panelTab === 'timeline' && panelDeal && (
+                  <ActivityTimeline dealId={panelDeal.id} />
+                )}
+
+                {panelTab === 'emails' && panelDeal && (
+                  <EmailPanel dealId={panelDeal.id} dealEmail={panelDeal.contact_email} />
+                )}
+
+                {panelTab === 'more' && panelDeal && (
+                  <DealMorePanel deal={panelDeal} onRefresh={() => { load(); openPanel(panelDeal) }} />
                 )}
               </div>
             )}
@@ -1938,7 +2414,7 @@ export default function CRMPage() {
             <form onSubmit={handleSave} style={{ overflowY: 'auto', flex: 1 }}>
               <div style={{ padding: '16px 20px', display: 'flex', flexDirection: 'column', gap: 12 }}>
                 {dupWarning && (
-                  <div style={{ padding: '7px 10px', background: '#FFFAE6', border: '1px solid #FFE380', borderRadius: 5, fontSize: 12, color: '#974F0C' }}>
+                  <div style={{ padding: '7px 10px', background: '#FFFAE6', border: '1px solid #FFE380', borderRadius: 2, fontSize: 12, color: '#974F0C' }}>
                     {dupWarning}
                   </div>
                 )}
@@ -1956,8 +2432,8 @@ export default function CRMPage() {
                     <FInput type="number" value={form.deal_value} onChange={v => setForm(f => ({ ...f, deal_value: v }))} placeholder="0" min="0" />
                   </FField>
                   <FField label="Stage">
-                    <select value={form.stage} onChange={e => setForm(f => ({ ...f, stage: e.target.value, probability: PROB_MAP[e.target.value] ?? f.probability }))} style={inputSt}>
-                      {STAGES.map(s => <option key={s.id} value={s.id}>{s.label}</option>)}
+                    <select value={form.stage} onChange={e => setForm(f => ({ ...f, stage: e.target.value, probability: stageMap[e.target.value]?.probability ?? f.probability }))} style={inputSt}>
+                      {visibleStages.map(s => <option key={s.id} value={s.id}>{s.label}</option>)}
                     </select>
                   </FField>
                   <FField label={`Probability (${form.probability}%)`}>
@@ -2041,17 +2517,22 @@ export default function CRMPage() {
                     </div>
                   )}
                 </div>
-                {formError && <p style={{ margin: 0, fontSize: 12, color: '#BF2600', background: '#FFEBE6', padding: '7px 10px', borderRadius: 5 }}>{formError}</p>}
+                {formError && <p style={{ margin: 0, fontSize: 12, color: '#BF2600', background: '#FFEBE6', padding: '7px 10px', borderRadius: 2 }}>{formError}</p>}
               </div>
               <div style={{ padding: '12px 20px', borderTop: '1px solid #EBECF0', display: 'flex', gap: 8, justifyContent: 'flex-end', flexShrink: 0 }}>
-                <button type="button" onClick={() => setEditModal(null)} style={{ padding: '7px 16px', background: '#fff', border: '1.5px solid #DFE1E6', borderRadius: 6, cursor: 'pointer', fontSize: 12, color: '#5E6C84' }}>Cancel</button>
-                <button type="submit" disabled={saving} style={{ padding: '7px 20px', background: saving ? '#0052CC88' : '#0052CC', color: '#fff', border: 'none', borderRadius: 6, cursor: saving ? 'default' : 'pointer', fontSize: 12, fontWeight: 700 }}>
+                <button type="button" onClick={() => setEditModal(null)} style={{ padding: '7px 16px', background: '#fff', border: '1px solid #DFE1E6', borderRadius: 2, cursor: 'pointer', fontSize: 12, color: '#5E6C84' }}>Cancel</button>
+                <button type="submit" disabled={saving} style={{ padding: '7px 20px', background: saving ? '#0052CC88' : '#0052CC', color: '#fff', border: 'none', borderRadius: 2, cursor: saving ? 'default' : 'pointer', fontSize: 12, fontWeight: 700 }}>
                   {saving ? 'Saving…' : editModal === 'new' ? 'Create Deal' : 'Save Changes'}
                 </button>
               </div>
             </form>
           </div>
         </>
+      )}
+
+      {/* ── Stage Manager modal ── */}
+      {stageManagerOpen && (
+        <StageManager stages={stages} onChange={setStages} onClose={() => setStageManagerOpen(false)} pipelines={pipelines} onPipelinesChange={setPipelines} />
       )}
 
       {/* ── Lost reason modal (feature 5) ── */}
@@ -2066,8 +2547,8 @@ export default function CRMPage() {
               style={{ ...inputSt, marginBottom: 16 }}
               onKeyDown={e => { if (e.key === 'Enter') handleLostConfirm() }} />
             <div style={{ display: 'flex', gap: 8, justifyContent: 'flex-end' }}>
-              <button onClick={() => { setLostModal(null); setLostReason('') }} style={{ padding: '6px 14px', background: '#fff', border: '1.5px solid #DFE1E6', borderRadius: 6, cursor: 'pointer', fontSize: 12, color: '#5E6C84' }}>Cancel</button>
-              <button onClick={handleLostConfirm} style={{ padding: '6px 16px', background: '#BF2600', color: '#fff', border: 'none', borderRadius: 6, cursor: 'pointer', fontSize: 12, fontWeight: 700 }}>
+              <button onClick={() => { setLostModal(null); setLostReason('') }} style={{ padding: '6px 14px', background: '#fff', border: '1px solid #DFE1E6', borderRadius: 2, cursor: 'pointer', fontSize: 12, color: '#5E6C84' }}>Cancel</button>
+              <button onClick={handleLostConfirm} style={{ padding: '6px 16px', background: '#BF2600', color: '#fff', border: 'none', borderRadius: 2, cursor: 'pointer', fontSize: 12, fontWeight: 700 }}>
                 Mark Lost
               </button>
             </div>
@@ -2083,8 +2564,8 @@ export default function CRMPage() {
             <h3 style={{ margin: '0 0 8px', fontSize: 14, fontWeight: 700, color: '#172B4D' }}>Delete deal?</h3>
             <p style={{ margin: '0 0 20px', fontSize: 12, color: '#6B778C' }}>This action cannot be undone.</p>
             <div style={{ display: 'flex', gap: 8, justifyContent: 'flex-end' }}>
-              <button onClick={() => setDeleteConfirm(null)} style={{ padding: '6px 14px', background: '#fff', border: '1.5px solid #DFE1E6', borderRadius: 6, cursor: 'pointer', fontSize: 12, color: '#5E6C84' }}>Cancel</button>
-              <button onClick={handleDelete} style={{ padding: '6px 16px', background: '#BF2600', color: '#fff', border: 'none', borderRadius: 6, cursor: 'pointer', fontSize: 12, fontWeight: 700 }}>Delete</button>
+              <button onClick={() => setDeleteConfirm(null)} style={{ padding: '6px 14px', background: '#fff', border: '1px solid #DFE1E6', borderRadius: 2, cursor: 'pointer', fontSize: 12, color: '#5E6C84' }}>Cancel</button>
+              <button onClick={handleDelete} style={{ padding: '6px 16px', background: '#BF2600', color: '#fff', border: 'none', borderRadius: 2, cursor: 'pointer', fontSize: 12, fontWeight: 700 }}>Delete</button>
             </div>
           </div>
         </>
@@ -2122,7 +2603,7 @@ export default function CRMPage() {
                         { label: 'Win Rate', value: coRate !== null ? `${coRate}%` : '—', color: '#00875A' },
                         { label: 'Total Value', value: fmt$(co.reduce((s, d) => s + parseFloat(d.deal_value || 0), 0)), color: '#172B4D' },
                       ].map(s => (
-                        <div key={s.label} style={{ flex: 1, textAlign: 'center', background: '#F4F5F7', borderRadius: 6, padding: '8px 6px' }}>
+                        <div key={s.label} style={{ flex: 1, textAlign: 'center', background: '#F4F5F7', borderRadius: 2, padding: '8px 6px' }}>
                           <div style={{ fontSize: 16, fontWeight: 700, color: s.color || '#5E6C84' }}>{s.value}</div>
                           <div style={{ fontSize: 10, color: '#97A0AF', marginTop: 2 }}>{s.label}</div>
                         </div>
@@ -2130,11 +2611,11 @@ export default function CRMPage() {
                     </div>
                     {/* Deal list */}
                     {co.map(d => {
-                      const st = STAGE_MAP[d.stage]
+                      const st = stageMap[d.stage]
                       return (
                         <div key={d.id}
                           onClick={() => { setCompanyModal(null); openPanel(d) }}
-                          style={{ display: 'flex', alignItems: 'center', gap: 10, padding: '8px 10px', borderRadius: 6, cursor: 'pointer', marginBottom: 4 }}
+                          style={{ display: 'flex', alignItems: 'center', gap: 10, padding: '8px 10px', borderRadius: 2, cursor: 'pointer', marginBottom: 4 }}
                           onMouseEnter={e => e.currentTarget.style.background = '#F4F5F7'}
                           onMouseLeave={e => e.currentTarget.style.background = 'transparent'}>
                           <span style={{ background: st.bg, color: st.color, border: `1px solid ${st.border}`, borderRadius: 3, padding: '2px 6px', fontSize: 10, fontWeight: 600, flexShrink: 0 }}>{st.label}</span>
@@ -2164,8 +2645,8 @@ export default function CRMPage() {
             <p style={{ margin: '0 0 12px', fontSize: 12, color: '#6B778C', lineHeight: 1.6 }}>{stageRuleWarn.message}</p>
             <p style={{ margin: '0 0 20px', fontSize: 12, color: '#6B778C' }}>Move anyway?</p>
             <div style={{ display: 'flex', gap: 8, justifyContent: 'flex-end' }}>
-              <button onClick={() => setStageRuleWarn(null)} style={{ padding: '6px 14px', background: '#fff', border: '1.5px solid #DFE1E6', borderRadius: 6, cursor: 'pointer', fontSize: 12, color: '#5E6C84' }}>Go Back</button>
-              <button onClick={handleStageRuleConfirm} style={{ padding: '6px 16px', background: '#0052CC', color: '#fff', border: 'none', borderRadius: 6, cursor: 'pointer', fontSize: 12, fontWeight: 700 }}>Move Anyway</button>
+              <button onClick={() => setStageRuleWarn(null)} style={{ padding: '6px 14px', background: '#fff', border: '1px solid #DFE1E6', borderRadius: 2, cursor: 'pointer', fontSize: 12, color: '#5E6C84' }}>Go Back</button>
+              <button onClick={handleStageRuleConfirm} style={{ padding: '6px 16px', background: '#0052CC', color: '#fff', border: 'none', borderRadius: 2, cursor: 'pointer', fontSize: 12, fontWeight: 700 }}>Move Anyway</button>
             </div>
           </div>
         </>
@@ -2201,13 +2682,13 @@ export default function CRMPage() {
               </div>
             </div>
             <div style={{ display: 'flex', gap: 8, justifyContent: 'flex-end' }}>
-              <button onClick={() => setGoalModal(false)} style={{ padding: '6px 14px', background: '#fff', border: '1.5px solid #DFE1E6', borderRadius: 6, cursor: 'pointer', fontSize: 12, color: '#5E6C84' }}>Cancel</button>
+              <button onClick={() => setGoalModal(false)} style={{ padding: '6px 14px', background: '#fff', border: '1px solid #DFE1E6', borderRadius: 2, cursor: 'pointer', fontSize: 12, color: '#5E6C84' }}>Cancel</button>
               <button
                 onClick={async () => {
                   await saveGoal()
                   setGoalModal(false)
                 }}
-                style={{ padding: '6px 16px', background: '#0052CC', color: '#fff', border: 'none', borderRadius: 6, cursor: 'pointer', fontSize: 12, fontWeight: 700 }}
+                style={{ padding: '6px 16px', background: '#0052CC', color: '#fff', border: 'none', borderRadius: 2, cursor: 'pointer', fontSize: 12, fontWeight: 700 }}
               >Save Goal</button>
             </div>
           </div>
@@ -2225,7 +2706,7 @@ export default function CRMPage() {
             </div>
             <div style={{ flex: 1, overflowY: 'auto', padding: '16px 20px' }}>
               {/* Create new template */}
-              <div style={{ background: '#F8F9FC', borderRadius: 8, padding: 14, marginBottom: 16, border: '1px solid #EBECF0' }}>
+              <div style={{ background: '#F8F9FC', borderRadius: 2, padding: 14, marginBottom: 16, border: '1px solid #EBECF0' }}>
                 <div style={{ fontSize: 11, fontWeight: 700, color: '#5E6C84', marginBottom: 10, textTransform: 'uppercase', letterSpacing: '0.05em' }}>New Template</div>
                 <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 8, marginBottom: 8 }}>
                   <div>
@@ -2244,7 +2725,7 @@ export default function CRMPage() {
                   rows={4} placeholder="Template body…"
                   style={{ ...inputSt, fontSize: 11, resize: 'vertical', marginBottom: 10 }} />
                 <button onClick={saveTemplate} disabled={!newTemplate.name.trim() || !newTemplate.body.trim()}
-                  style={{ padding: '6px 16px', background: '#0052CC', color: '#fff', border: 'none', borderRadius: 6, cursor: 'pointer', fontSize: 11, fontWeight: 700, opacity: (!newTemplate.name.trim() || !newTemplate.body.trim()) ? 0.5 : 1 }}>
+                  style={{ padding: '6px 16px', background: '#0052CC', color: '#fff', border: 'none', borderRadius: 2, cursor: 'pointer', fontSize: 11, fontWeight: 700, opacity: (!newTemplate.name.trim() || !newTemplate.body.trim()) ? 0.5 : 1 }}>
                   Save Template
                 </button>
               </div>
@@ -2253,7 +2734,7 @@ export default function CRMPage() {
                 <div style={{ textAlign: 'center', color: '#97A0AF', fontSize: 12, padding: '20px 0' }}>No templates yet. Create one above.</div>
               )}
               {emailTemplates.map(t => (
-                <div key={t.id} style={{ border: '1px solid #EBECF0', borderRadius: 8, padding: '10px 14px', marginBottom: 8, background: '#fff' }}>
+                <div key={t.id} style={{ border: '1px solid #EBECF0', borderRadius: 2, padding: '10px 14px', marginBottom: 8, background: '#fff' }}>
                   <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: 4 }}>
                     <div>
                       <div style={{ fontSize: 12, fontWeight: 700, color: '#172B4D' }}>{t.name}</div>
@@ -2281,7 +2762,7 @@ export default function CRMPage() {
             <p style={{ margin: '0 0 14px', fontSize: 12, color: '#5E6C84' }}>
               A node named <strong>"{canvasPicker.deal.company_name}"</strong> will be created on the canvas and linked to this deal.
             </p>
-            {cpError && <div style={{ background: '#FFEBE6', color: '#BF2600', borderRadius: 5, padding: '7px 10px', fontSize: 12, marginBottom: 12 }}>{cpError}</div>}
+            {cpError && <div style={{ background: '#FFEBE6', color: '#BF2600', borderRadius: 2, padding: '7px 10px', fontSize: 12, marginBottom: 12 }}>{cpError}</div>}
             {cpProjects.length === 0 && !cpError && (
               <div style={{ color: '#97A0AF', fontSize: 12, marginBottom: 12 }}>Loading projects…</div>
             )}
@@ -2340,7 +2821,10 @@ export default function CRMPage() {
           </div>
         </>
       )}
+      </div>
     </div>
+    </div>
+    </AppShell>
   )
 }
 
@@ -2370,7 +2854,7 @@ function InfoRow({ label, value, color }) {
 // ── Form sub-components ────────────────────────────────────────────────────────
 const inputSt = {
   width: '100%', boxSizing: 'border-box', padding: '7px 9px',
-  borderRadius: 6, border: '1.5px solid #DFE1E6', fontSize: 12,
+  borderRadius: 2, border: '1px solid #DFE1E6', fontSize: 12,
   color: '#172B4D', background: '#FAFBFC', fontFamily: 'inherit', outline: 'none',
 }
 const miniInput = { ...inputSt, padding: '5px 8px', fontSize: 11 }
@@ -2396,33 +2880,33 @@ function FField({ label, children, span }) {
 // ── Style constants ────────────────────────────────────────────────────────────
 const topBtn = {
   background: 'rgba(255,255,255,0.1)', border: '1px solid transparent', color: '#fff',
-  cursor: 'pointer', borderRadius: 5, padding: '4px 10px', fontSize: 11,
+  cursor: 'pointer', borderRadius: 2, padding: '4px 10px', fontSize: 11,
   display: 'flex', alignItems: 'center', gap: 4, transition: 'background 0.12s, border-color 0.12s',
 }
 const overlay = { position: 'fixed', inset: 0, background: 'rgba(9,30,66,0.45)', zIndex: 200 }
 const modalBox = {
   position: 'fixed', top: '50%', left: '50%', transform: 'translate(-50%,-50%)',
   zIndex: 201, width: 520, maxWidth: 'calc(100vw - 32px)', maxHeight: '90vh',
-  background: '#fff', borderRadius: 12, boxShadow: '0 20px 60px rgba(9,30,66,0.22)',
+  background: '#fff', borderRadius: 3, boxShadow: '0 8px 32px rgba(9,30,66,0.18)',
   display: 'flex', flexDirection: 'column', overflow: 'hidden',
 }
 const smallModal = {
   position: 'fixed', top: '50%', left: '50%', transform: 'translate(-50%,-50%)',
-  background: '#fff', borderRadius: 8, padding: '20px 24px', width: 360,
-  maxWidth: 'calc(100vw - 32px)', boxShadow: '0 12px 40px rgba(9,30,66,0.2)',
+  background: '#fff', borderRadius: 3, padding: '20px 24px', width: 360,
+  maxWidth: 'calc(100vw - 32px)', boxShadow: '0 8px 32px rgba(9,30,66,0.18)',
 }
 const ghostBtn = {
   background: 'none', border: 'none', cursor: 'pointer', color: '#97A0AF',
-  padding: '4px 8px', borderRadius: 4, fontSize: 11, transition: 'background 0.1s, color 0.1s',
+  padding: '4px 8px', borderRadius: 2, fontSize: 11, transition: 'background 0.1s, color 0.1s',
 }
 function panelActionBtn(color, bg) {
-  return { background: 'none', border: 'none', color: '#97A0AF', cursor: 'pointer', padding: '5px 7px', borderRadius: 4, fontSize: 13, lineHeight: 1, transition: 'color 0.1s, background 0.1s' }
+  return { background: 'none', border: 'none', color: '#97A0AF', cursor: 'pointer', padding: '5px 7px', borderRadius: 2, fontSize: 13, lineHeight: 1, transition: 'color 0.1s, background 0.1s' }
 }
 function smBtn(color) {
-  if (color === '#0052CC') return { padding: '5px 12px', background: '#0052CC', color: '#fff', border: 'none', borderRadius: 6, cursor: 'pointer', fontSize: 11, fontWeight: 600 }
-  return { padding: '5px 11px', background: '#fff', color: '#5E6C84', border: '1.5px solid #DFE1E6', borderRadius: 6, cursor: 'pointer', fontSize: 11 }
+  if (color === '#0052CC') return { padding: '5px 12px', background: '#0052CC', color: '#fff', border: 'none', borderRadius: 2, cursor: 'pointer', fontSize: 11, fontWeight: 600 }
+  return { padding: '5px 11px', background: '#fff', color: '#5E6C84', border: '1px solid #DFE1E6', borderRadius: 2, cursor: 'pointer', fontSize: 11 }
 }
 const srchInput = {
-  padding: '5px 9px', border: '1.5px solid #DFE1E6', borderRadius: 6, fontSize: 11,
+  padding: '5px 9px', border: '1px solid #DFE1E6', borderRadius: 2, fontSize: 11,
   color: '#172B4D', background: '#FAFBFC', fontFamily: 'inherit', outline: 'none',
 }

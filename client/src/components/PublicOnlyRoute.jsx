@@ -4,5 +4,5 @@ import { useAuth } from '../context/AuthContext.jsx'
 
 export default function PublicOnlyRoute({ children }) {
   const { isAuthenticated } = useAuth()
-  return isAuthenticated ? <Navigate to="/app" replace /> : children
+  return isAuthenticated ? <Navigate to="/app/canvas" replace /> : children
 }
