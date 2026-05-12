@@ -132,7 +132,7 @@ export default function AppProductSwitcher({ currentProduct }) {
             </p>
           </div>
 
-          <div style={{ padding: 8 }}>
+          <div style={{ padding: 12, display: 'grid', gridTemplateColumns: 'repeat(2, 1fr)', gap: 6 }}>
             {PRODUCTS.map(product => {
               const isActive = product.id === currentProduct
               return (
@@ -144,44 +144,39 @@ export default function AppProductSwitcher({ currentProduct }) {
                     if (!isActive) navigate(product.path)
                   }}
                   style={{
-                    display: 'flex', alignItems: 'center', gap: 12, width: '100%',
-                    padding: '10px 12px', borderRadius: 8,
+                    display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center',
+                    gap: 8, padding: '14px 8px', borderRadius: 10,
                     background: isActive ? product.accentBg : 'transparent',
                     border: isActive ? `1px solid ${product.accent}30` : '1px solid transparent',
-                    cursor: product.comingSoon ? 'default' : isActive ? 'default' : 'pointer', textAlign: 'left',
+                    cursor: product.comingSoon ? 'default' : isActive ? 'default' : 'pointer',
                     transition: 'background 0.12s',
-                    opacity: product.comingSoon ? 0.6 : 1,
+                    opacity: product.comingSoon ? 0.55 : 1,
                   }}
                   onMouseEnter={e => { if (!isActive && !product.comingSoon) e.currentTarget.style.background = '#F4F5F7' }}
                   onMouseLeave={e => { if (!isActive && !product.comingSoon) e.currentTarget.style.background = isActive ? product.accentBg : 'transparent' }}
                 >
                   <div style={{
-                    width: 36, height: 36, borderRadius: 8,
+                    width: 44, height: 44, borderRadius: 12,
                     display: 'flex', alignItems: 'center', justifyContent: 'center',
                     background: isActive ? product.accent : '#EBECF0',
-                    color: isActive ? '#fff' : '#5E6C84', flexShrink: 0,
+                    color: isActive ? '#fff' : '#5E6C84',
                   }}>
                     {product.icon}
                   </div>
-                  <div style={{ flex: 1, minWidth: 0 }}>
-                    <div style={{ fontSize: '0.875rem', fontWeight: 600, color: isActive ? product.accent : '#172B4D', display: 'flex', alignItems: 'center', gap: 6 }}>
+                  <div style={{ textAlign: 'center' }}>
+                    <div style={{ fontSize: '0.75rem', fontWeight: 600, color: isActive ? product.accent : '#172B4D', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 4, flexWrap: 'wrap' }}>
                       {product.label}
                       {product.id === 'crm' && (
-                        <span style={{ fontSize: '0.5rem', fontWeight: 700, background: '#0052CC', color: '#fff', padding: '1px 5px', borderRadius: 3, letterSpacing: '0.06em', textTransform: 'uppercase' }}>Beta</span>
+                        <span style={{ fontSize: '0.5rem', fontWeight: 700, background: '#0052CC', color: '#fff', padding: '1px 4px', borderRadius: 3, letterSpacing: '0.06em', textTransform: 'uppercase' }}>Beta</span>
                       )}
                       {product.comingSoon && (
-                        <span style={{ fontSize: '0.5rem', fontWeight: 700, background: '#E91E8C', color: '#fff', padding: '1px 5px', borderRadius: 3, letterSpacing: '0.06em', textTransform: 'uppercase' }}>Soon</span>
+                        <span style={{ fontSize: '0.5rem', fontWeight: 700, background: '#E91E8C', color: '#fff', padding: '1px 4px', borderRadius: 3, letterSpacing: '0.06em', textTransform: 'uppercase' }}>Soon</span>
                       )}
                     </div>
-                    <div style={{ fontSize: '0.6875rem', color: '#97A0AF', marginTop: 1 }}>
+                    <div style={{ fontSize: '0.625rem', color: '#97A0AF', marginTop: 1 }}>
                       {product.subtitle}
                     </div>
                   </div>
-                  {isActive && (
-                    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke={product.accent} strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
-                      <polyline points="20 6 9 17 4 12"/>
-                    </svg>
-                  )}
                 </button>
               )
             })}
