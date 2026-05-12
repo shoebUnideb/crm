@@ -7,7 +7,7 @@ const PRODUCTS = [
     label: 'Canvas',
     path: '/app/canvas-info',
     subtitle: 'Mind maps & planning',
-    accent: '#6366f1',
+    accent: '#3730a3',
     accentBg: '#eef2ff',
     icon: (
       <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
@@ -24,7 +24,7 @@ const PRODUCTS = [
     label: 'CRM',
     path: '/app/crm-info',
     subtitle: 'Sales & pipeline',
-    accent: '#10b981',
+    accent: '#064e3b',
     accentBg: '#ecfdf5',
     icon: (
       <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
@@ -40,7 +40,7 @@ const PRODUCTS = [
     label: 'Wiki',
     path: '/app/docs',
     subtitle: 'Team wiki',
-    accent: '#f59e0b',
+    accent: '#78350f',
     accentBg: '#fffbeb',
     icon: (
       <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
@@ -57,8 +57,8 @@ const PRODUCTS = [
     label: 'bahn Signal',
     path: null,
     subtitle: 'Team communication',
-    accent: '#E91E8C',
-    accentBg: '#fce4f3',
+    accent: '#831843',
+    accentBg: '#fdf2f8',
     comingSoon: true,
     icon: (
       <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
@@ -71,7 +71,7 @@ const PRODUCTS = [
     label: 'bahn Engine',
     path: null,
     subtitle: 'Operational execution',
-    accent: '#8B5CF6',
+    accent: '#4c1d95',
     accentBg: '#f5f3ff',
     comingSoon: true,
     icon: (
@@ -87,7 +87,7 @@ const PRODUCTS = [
     label: 'bahn Radar',
     path: null,
     subtitle: 'Operational awareness',
-    accent: '#DC2626',
+    accent: '#7f1d1d',
     accentBg: '#fef2f2',
     comingSoon: true,
     icon: (
