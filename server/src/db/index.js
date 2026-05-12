@@ -72,7 +72,6 @@ export async function initDb() {
   `)
   await p.query(`CREATE INDEX IF NOT EXISTS idx_email_verifications_email ON email_verifications(email)`)
   await p.query(`ALTER TABLE project_members ADD COLUMN IF NOT EXISTS scope VARCHAR(50) DEFAULT 'project'`)
-  await p.query(`ALTER TABLE project_invites ADD COLUMN IF NOT EXISTS scope VARCHAR(50) DEFAULT 'project'`)
   await p.query(`
     CREATE TABLE IF NOT EXISTS project_invites (
       id SERIAL PRIMARY KEY,
@@ -86,6 +85,7 @@ export async function initDb() {
       accepted_at TIMESTAMPTZ DEFAULT NULL
     )
   `)
+  await p.query(`ALTER TABLE project_invites ADD COLUMN IF NOT EXISTS scope VARCHAR(50) DEFAULT 'project'`)
   await p.query(`
     CREATE TABLE IF NOT EXISTS analytics_events (
       id SERIAL PRIMARY KEY,
