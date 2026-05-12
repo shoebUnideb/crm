@@ -22,6 +22,12 @@ import PrivacyPage from './pages/PrivacyPage.jsx'
 import TermsPage from './pages/TermsPage.jsx'
 import CookiesPage from './pages/CookiesPage.jsx'
 import RoadmapPage from './pages/RoadmapPage.jsx'
+import CapsulePage from './pages/CapsulePage.jsx'
+import CRMProductPage from './pages/CRMProductPage.jsx'
+import WikiPage from './pages/WikiPage.jsx'
+import PlatformPage from './pages/PlatformPage.jsx'
+import PricingPage from './pages/PricingPage.jsx'
+import SolutionsPage from './pages/SolutionsPage.jsx'
 import NotFoundPage from './pages/NotFoundPage.jsx'
 import { useAuthModal } from './context/AuthModalContext.jsx'
 import { useAuth } from './context/AuthContext.jsx'
@@ -119,6 +125,12 @@ export default function App() {
           <Route path="/admin"    element={<Navigate to="/app/admin" replace />} />
 
           <Route path="/roadmap" element={<RoadmapPage />} />
+          <Route path="/capsule" element={<CapsulePage />} />
+          <Route path="/crm-product" element={<CRMProductPage />} />
+          <Route path="/wiki" element={<WikiPage />} />
+          <Route path="/platform" element={<PlatformPage />} />
+          <Route path="/pricing" element={<PricingPage />} />
+          <Route path="/solutions/:slug" element={<SolutionsPage />} />
           <Route path="*" element={<NotFoundPage />} />
         </Routes>
       </React.Suspense>

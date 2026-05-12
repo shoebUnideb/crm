@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react'
+import React, { useState, useEffect, useRef, useCallback } from 'react'
 import { createPortal } from 'react-dom'
 import { useNavigate } from 'react-router-dom'
 import { useAuth } from '../../context/AuthContext.jsx'
@@ -78,8 +78,180 @@ function PasswordStrengthBar({ password }) {
   )
 }
 
+// ── OTP view ──────────────────────────────────────────────────────────────────
+function OtpView({ email, onBack, onSuccess }) {
+  const [digits, setDigits] = useState(['', '', '', '', '', ''])
+  const [error, setError] = useState('')
+  const [loading, setLoading] = useState(false)
+  const [resendCooldown, setResendCooldown] = useState(60)
+  const [resendMsg, setResendMsg] = useState('')
+  const inputRefs = useRef([])
+
+  // Start cooldown timer on mount
+  useEffect(() => {
+    inputRefs.current[0]?.focus()
+    const interval = setInterval(() => {
+      setResendCooldown(c => {
+        if (c <= 1) { clearInterval(interval); return 0 }
+        return c - 1
+      })
+    }, 1000)
+    return () => clearInterval(interval)
+  }, [])
+
+  function handleDigitChange(idx, val) {
+    // Allow paste of full code
+    if (val.length > 1) {
+      const clean = val.replace(/\D/g, '').slice(0, 6)
+      if (clean.length === 6) {
+        const next = clean.split('')
+        setDigits(next)
+        inputRefs.current[5]?.focus()
+        return
+      }
+    }
+    const digit = val.replace(/\D/g, '').slice(-1)
+    const next = [...digits]
+    next[idx] = digit
+    setDigits(next)
+    if (digit && idx < 5) inputRefs.current[idx + 1]?.focus()
+  }
+
+  function handleKeyDown(idx, e) {
+    if (e.key === 'Backspace' && !digits[idx] && idx > 0) {
+      inputRefs.current[idx - 1]?.focus()
+    }
+  }
+
+  async function handleSubmit(e) {
+    e.preventDefault()
+    const otp = digits.join('')
+    if (otp.length < 6) { setError('Enter all 6 digits'); return }
+    setError('')
+    setLoading(true)
+    try {
+      const res = await fetch('/api/auth/verify-email', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ email, otp }),
+      })
+      const data = await res.json()
+      if (!res.ok) { setError(data.error || 'Verification failed'); setDigits(['', '', '', '', '', '']); inputRefs.current[0]?.focus(); return }
+      onSuccess(data.token, data.user)
+    } catch {
+      setError('Network error — please try again')
+    } finally {
+      setLoading(false)
+    }
+  }
+
+  async function handleResend() {
+    if (resendCooldown > 0) return
+    setResendMsg('')
+    setError('')
+    try {
+      const res = await fetch('/api/auth/resend-otp', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ email }),
+      })
+      const data = await res.json()
+      if (!res.ok) { setError(data.error || 'Could not resend code'); return }
+      setResendMsg('New code sent!')
+      setDigits(['', '', '', '', '', ''])
+      setResendCooldown(60)
+      const interval = setInterval(() => {
+        setResendCooldown(c => {
+          if (c <= 1) { clearInterval(interval); return 0 }
+          return c - 1
+        })
+      }, 1000)
+      inputRefs.current[0]?.focus()
+    } catch {
+      setError('Network error — please try again')
+    }
+  }
+
+  return (
+    <div style={{ padding: '24px 32px 32px' }}>
+      <div style={{ textAlign: 'center', marginBottom: 24 }}>
+        <div style={{ fontSize: 40, marginBottom: 12 }}>📬</div>
+        <h2 style={{ fontSize: '1.25rem', fontWeight: 700, color: navy, margin: '0 0 8px' }}>Check your inbox</h2>
+        <p style={{ fontSize: '0.8125rem', color: textSubtle, margin: 0, lineHeight: 1.6 }}>
+          We sent a 6-digit code to<br />
+          <strong style={{ color: navy }}>{email}</strong>
+        </p>
+      </div>
+
+      <ErrorBanner error={error} />
+
+      {resendMsg && (
+        <div style={{ display: 'flex', gap: 10, padding: '10px 12px', background: '#E3FCEF', border: '1px solid #ABF5D1', borderRadius: 3, marginBottom: 16 }}>
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#006644" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" style={{ flexShrink: 0, marginTop: 1 }}>
+            <path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"/><polyline points="22 4 12 14.01 9 11.01"/>
+          </svg>
+          <span style={{ fontSize: '0.8125rem', color: '#006644' }}>{resendMsg}</span>
+        </div>
+      )}
+
+      <form onSubmit={handleSubmit}>
+        {/* 6-digit boxes */}
+        <div style={{ display: 'flex', gap: 8, justifyContent: 'center', marginBottom: 24 }}>
+          {digits.map((d, i) => (
+            <input
+              key={i}
+              ref={el => inputRefs.current[i] = el}
+              type="text"
+              inputMode="numeric"
+              maxLength={6}
+              value={d}
+              onChange={e => handleDigitChange(i, e.target.value)}
+              onKeyDown={e => handleKeyDown(i, e)}
+              onFocus={e => { e.currentTarget.style.borderColor = borderFocus; e.currentTarget.style.background = surface }}
+              onBlur={e => { e.currentTarget.style.borderColor = d ? blue : border; e.currentTarget.style.background = bg }}
+              style={{
+                width: 44, height: 52, textAlign: 'center', fontSize: '1.375rem', fontWeight: 700,
+                border: `2px solid ${d ? blue : border}`, borderRadius: 6, outline: 'none',
+                color: navy, background: bg, boxSizing: 'border-box',
+              }}
+            />
+          ))}
+        </div>
+
+        <button type="submit" disabled={loading} style={{
+          width: '100%', padding: '10px', borderRadius: 3, fontWeight: 600, fontSize: '0.9375rem',
+          background: loading ? '#B3D4FF' : blue, color: '#fff', border: 'none', cursor: loading ? 'not-allowed' : 'pointer',
+        }}
+          onMouseEnter={e => { if (!loading) e.currentTarget.style.background = blueHover }}
+          onMouseLeave={e => { if (!loading) e.currentTarget.style.background = loading ? '#B3D4FF' : blue }}
+        >
+          {loading ? 'Verifying…' : 'Verify email'}
+        </button>
+      </form>
+
+      <div style={{ textAlign: 'center', marginTop: 20 }}>
+        {resendCooldown > 0 ? (
+          <p style={{ fontSize: '0.8125rem', color: textSubtle, margin: 0 }}>
+            Resend code in <strong style={{ color: navy }}>{resendCooldown}s</strong>
+          </p>
+        ) : (
+          <button type="button" onClick={handleResend}
+            style={{ color: blue, fontWeight: 600, background: 'none', border: 'none', cursor: 'pointer', padding: 0, fontSize: '0.8125rem' }}>
+            Resend code
+          </button>
+        )}
+        <br />
+        <button type="button" onClick={onBack}
+          style={{ color: textSubtle, background: 'none', border: 'none', cursor: 'pointer', padding: 0, fontSize: '0.8125rem', marginTop: 10 }}>
+          ← Back
+        </button>
+      </div>
+    </div>
+  )
+}
+
 // ── Login view ────────────────────────────────────────────────────────────────
-function LoginView({ onClose, onRegister, onForgot }) {
+function LoginView({ onClose, onRegister, onForgot, onNeedsVerification }) {
   const { login, loginAsGuest } = useAuth()
   const { message } = useAuthModal()
   const navigate = useNavigate()
@@ -101,6 +273,7 @@ function LoginView({ onClose, onRegister, onForgot }) {
       })
       const data = await res.json()
       if (!res.ok) { setError(data.error || 'Login failed'); return }
+      if (data.needsVerification) { onNeedsVerification(data.email || email); return }
       login(data.token, data.user)
       onClose()
       navigate('/app/canvas')
@@ -187,9 +360,7 @@ function LoginView({ onClose, onRegister, onForgot }) {
 }
 
 // ── Register view ─────────────────────────────────────────────────────────────
-function RegisterView({ onClose, onLogin }) {
-  const { login } = useAuth()
-  const navigate = useNavigate()
+function RegisterView({ onLogin, onNeedsVerification }) {
   const [email, setEmail] = useState('')
   const [password, setPassword] = useState('')
   const [confirmPassword, setConfirmPassword] = useState('')
@@ -214,9 +385,8 @@ function RegisterView({ onClose, onLogin }) {
       })
       const data = await res.json()
       if (!res.ok) { setError(data.error || 'Registration failed'); return }
-      login(data.token, data.user)
-      onClose()
-      navigate('/app/canvas')
+      // Server sends OTP and returns needsVerification: true
+      onNeedsVerification(email)
     } catch {
       setError('Network error — please try again')
     } finally {
@@ -387,6 +557,15 @@ function ForgotView({ onLogin }) {
 // ── Modal shell ───────────────────────────────────────────────────────────────
 export default function AuthModal() {
   const { view, close, openLogin, openRegister, openForgot } = useAuthModal()
+  const { login } = useAuth()
+  const navigate = useNavigate()
+  // otpEmail is set when we need to show the OTP verification step
+  const [otpEmail, setOtpEmail] = useState(null)
+  // Remember which view to go back to from OTP
+  const [otpBackView, setOtpBackView] = useState('register')
+
+  // Reset OTP state when modal closes or view changes externally
+  useEffect(() => { if (!view) setOtpEmail(null) }, [view])
 
   useEffect(() => {
     if (!view) return
@@ -405,6 +584,23 @@ export default function AuthModal() {
   }, [view])
 
   if (!view) return null
+
+  function handleNeedsVerification(email, backView = view) {
+    setOtpBackView(backView)
+    setOtpEmail(email)
+  }
+
+  function handleOtpSuccess(token, user) {
+    login(token, user)
+    close()
+    navigate('/app/canvas')
+  }
+
+  function handleOtpBack() {
+    setOtpEmail(null)
+    if (otpBackView === 'login') openLogin()
+    else openRegister()
+  }
 
   return createPortal(
     <div
@@ -432,18 +628,24 @@ export default function AuthModal() {
           </svg>
         </button>
 
-        {/* Logo */}
-        <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', paddingTop: 28, paddingBottom: 0 }}>
-          <svg width="36" height="36" viewBox="0 0 32 32" fill="none">
-            <circle cx="11" cy="16" r="10" fill="#0052CC" opacity="0.9"/>
-            <circle cx="21" cy="16" r="10" fill="#4C9AFF" opacity="0.85"/>
-          </svg>
-          <span style={{ marginTop: 8, fontWeight: 700, fontSize: '1rem', color: navy, letterSpacing: '-0.01em' }}>bahnOS</span>
-        </div>
+        {/* Logo — hide on OTP screen to save space */}
+        {!otpEmail && (
+          <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', paddingTop: 28, paddingBottom: 0 }}>
+            <svg width="36" height="36" viewBox="0 0 32 32" fill="none">
+              <circle cx="11" cy="16" r="10" fill="#0052CC" opacity="0.9"/>
+              <circle cx="21" cy="16" r="10" fill="#4C9AFF" opacity="0.85"/>
+            </svg>
+            <span style={{ marginTop: 8, fontWeight: 700, fontSize: '1rem', color: navy, letterSpacing: '-0.01em' }}>bahnOS</span>
+          </div>
+        )}
 
-        {view === 'login'    && <LoginView    onClose={close} onRegister={openRegister} onForgot={openForgot} />}
-        {view === 'register' && <RegisterView onClose={close} onLogin={openLogin} />}
-        {view === 'forgot'   && <ForgotView   onClose={close} onLogin={openLogin} />}
+        {otpEmail
+          ? <OtpView email={otpEmail} onBack={handleOtpBack} onSuccess={handleOtpSuccess} />
+          : view === 'login'    ? <LoginView    onClose={close} onRegister={openRegister} onForgot={openForgot} onNeedsVerification={e => handleNeedsVerification(e, 'login')} />
+          : view === 'register' ? <RegisterView onLogin={openLogin} onNeedsVerification={e => handleNeedsVerification(e, 'register')} />
+          : view === 'forgot'   ? <ForgotView   onClose={close} onLogin={openLogin} />
+          : null
+        }
       </div>
     </div>,
     document.body

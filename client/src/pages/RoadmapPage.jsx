@@ -2,183 +2,201 @@ import React, { useState } from 'react'
 import Navbar from '../components/landing/Navbar.jsx'
 import Footer from '../components/landing/Footer.jsx'
 
-const blue      = '#0052CC'
-const blueLight = '#DEEBFF'
-const bluePale  = '#4C9AFF'
-const navy      = '#172B4D'
-const heroBlue  = '#0747A6'
-const textSubtle = '#5E6C84'
-const border    = '#DFE1E6'
+const bgPrimary    = '#0D1117'
+const bgSecondary  = '#161B22'
+const bgElevated   = '#1C2128'
+const bgBand       = '#010409'
+const borderColor  = '#30363D'
+const textPrimary  = '#E6EDF3'
+const textSecondary= '#8B949E'
+const textMuted    = '#484F58'
+const accentBlue   = '#2F81F7'
+const statusGreen  = '#3FB950'
+const capsuleColor = '#6366F1'
+const crmColor     = '#10B981'
+const wikiColor    = '#F59E0B'
 
-function SectionLabel({ children, dark = false }) {
+function SectionLabel({ children }) {
   return (
-    <p style={{ fontSize: '0.75rem', fontWeight: 700, letterSpacing: '0.1em', textTransform: 'uppercase', color: dark ? bluePale : blue, marginBottom: 16, display: 'flex', alignItems: 'center', gap: 10 }}>
-      <span style={{ display: 'inline-block', width: 28, height: 2, background: dark ? bluePale : blue, borderRadius: 2, flexShrink: 0 }} />
-      {children}
-    </p>
+    <div style={{ display: 'flex', alignItems: 'center', gap: 10, marginBottom: 20, justifyContent: 'center' }}>
+      <div style={{ width: 32, height: 1, background: borderColor }} />
+      <span style={{ fontSize: '0.6875rem', fontWeight: 700, color: textMuted, textTransform: 'uppercase', letterSpacing: '0.1em' }}>{children}</span>
+      <div style={{ width: 32, height: 1, background: borderColor }} />
+    </div>
   )
 }
 
-const QUARTERS = [
-  {
-    quarter: 'Q2 2026',
-    label: 'In progress',
-    color: { bg: '#E3FCEF', text: '#006644', dot: '#00875A' },
-    items: [
-      { title: 'Global search across maps', desc: 'Fuzzy-search all nodes across every project and map from a single hotkey.', tags: ['Search', 'Core'] },
-      { title: 'Onboarding flow', desc: 'Guided first-use tour for new users with interactive tooltips and a sample project.', tags: ['UX'] },
-      { title: 'Public roadmap page', desc: "This very page — open roadmap so users know what's coming.", tags: ['Transparency'] },
-    ],
-  },
-  {
-    quarter: 'Q3 2026',
-    label: 'Planned',
-    color: { bg: '#DEEBFF', text: '#0052CC', dot: '#0052CC' },
-    items: [
-      { title: 'Pricing & billing', desc: 'Self-serve upgrade to a Pro plan with higher collaborator limits and export quotas.', tags: ['Monetisation'] },
-      { title: 'Node attachments', desc: 'Attach files and images directly to nodes — stored alongside your project data.', tags: ['Core'] },
-      { title: 'Two-way Slack sync', desc: 'Get notified in Slack when nodes are updated; reply in Slack to add a comment.', tags: ['Integrations'] },
-      { title: 'AI layout suggestions', desc: 'One-click AI that rearranges and groups your nodes by theme using embeddings.', tags: ['AI'] },
-    ],
-  },
-  {
-    quarter: 'Q4 2026',
-    label: 'Exploring',
-    color: { bg: '#F4F5F7', text: '#5E6C84', dot: '#97A0AF' },
-    items: [
-      { title: 'Mobile app (iOS & Android)', desc: 'Native mobile companion for viewing and editing maps on the go.', tags: ['Mobile'] },
-      { title: 'GitHub integration', desc: 'Link nodes to GitHub issues and PRs; auto-update status when issues close.', tags: ['Integrations'] },
-      { title: 'Custom node shapes', desc: 'Beyond rectangles — diamonds, hexagons, circles, and custom SVG shapes.', tags: ['Canvas'] },
-      { title: 'Offline mode', desc: 'Full offline editing with automatic sync when you reconnect.', tags: ['Core'] },
-    ],
-  },
-  {
-    quarter: 'Released',
-    label: 'Shipped',
-    color: { bg: '#EAE6FF', text: '#403294', dot: '#6554C0' },
-    items: [
-      { title: 'Real-time collaboration', desc: 'Live cursors, presence avatars, and conflict-free multi-user editing.', tags: ['Collab'] },
-      { title: 'Jira two-way sync', desc: 'Push nodes to Jira and pull status updates back automatically.', tags: ['Integrations'] },
-      { title: 'Sprint board & burndown', desc: 'Built-in sprint planning directly from your mind map.', tags: ['Agile'] },
-      { title: 'Gantt chart view', desc: 'Auto-generated Gantt from node due dates and dependencies.', tags: ['Views'] },
-      { title: 'CSV / PNG / SVG export', desc: 'Export your map in multiple formats for sharing outside bahnOS.', tags: ['Export'] },
-    ],
-  },
+const AVAILABLE = [
+  { title: 'Real-time collaboration',  product: 'Capsule', color: capsuleColor, desc: 'Live cursors, presence avatars, and conflict-free multi-user editing.', tags: ['Collab'] },
+  { title: 'Jira two-way sync',        product: 'Capsule', color: capsuleColor, desc: 'Push nodes to Jira as Epics/Stories/Subtasks. Pull status updates back.', tags: ['Integrations'] },
+  { title: 'Sprint board & burndown',  product: 'Capsule', color: capsuleColor, desc: 'Built-in sprint planning scoped to your canvas. Velocity and burndown charts.', tags: ['Agile'] },
+  { title: 'Kanban board view',        product: 'Capsule', color: capsuleColor, desc: 'Drag cards across status columns. Multi-assignee swimlanes and WIP limits.', tags: ['Views'] },
+  { title: 'Timeline / Gantt view',    product: 'Capsule', color: capsuleColor, desc: 'Auto-generated Gantt from node due dates and dependencies. Zoom weeks to quarters.', tags: ['Views'] },
+  { title: 'CSV / image export',       product: 'Capsule', color: capsuleColor, desc: 'Export your canvas as PNG, SVG, or CSV for sharing outside bahnOS.', tags: ['Export'] },
+  { title: 'Confluence export',        product: 'Capsule', color: capsuleColor, desc: 'Push structured content into Confluence pages directly from your map.', tags: ['Export'] },
+  { title: 'CRM pipeline',            product: 'CRM',     color: crmColor,     desc: 'Kanban-style deal pipeline with custom stages, deal values, and forecasting.', tags: ['CRM'] },
+  { title: 'Contacts & Organizations', product: 'CRM',     color: crmColor,     desc: 'Full contact and org records with activity timelines and deal history.', tags: ['CRM'] },
+  { title: 'Activity logging',         product: 'CRM',     color: crmColor,     desc: 'Log calls, emails, meetings, and notes linked to any CRM record.', tags: ['CRM'] },
+  { title: 'Wiki rich text editor',   product: 'Wiki',    color: wikiColor,    desc: 'Tiptap-powered editor with headings, tables, code blocks, slash commands.', tags: ['Wiki'] },
+  { title: 'Spaces & page hierarchy', product: 'Wiki',    color: wikiColor,    desc: 'Organize pages into Spaces with nested sub-pages, permissions, and page tree.', tags: ['Wiki'] },
+  { title: 'Page version history',    product: 'Wiki',    color: wikiColor,    desc: 'Every save creates a snapshot. Browse, diff, and restore any past version.', tags: ['Wiki'] },
+  { title: 'Templates library',       product: 'Platform', color: accentBlue,  desc: '50+ ready-made templates across Capsule, CRM, and Wiki to get started fast.', tags: ['Platform'] },
+  { title: 'Role-based access',        product: 'Platform', color: accentBlue,  desc: 'Admin, edit, and view roles per project with invite management and email invites.', tags: ['Platform'] },
+  { title: 'Audit log',               product: 'Platform', color: accentBlue,  desc: 'Full change history for every project. Track who changed what and when.', tags: ['Platform'] },
+]
+
+const COMING = [
+  { title: 'Global search',          product: 'Platform', color: accentBlue,  desc: 'Fuzzy-search across all nodes, pages, contacts, and deals from a single hotkey.', tags: ['Search'], when: 'Q2 2026' },
+  { title: 'Onboarding flow',        product: 'Platform', color: accentBlue,  desc: 'Guided first-use tour for new users with an interactive sample project.', tags: ['UX'], when: 'Q2 2026' },
+  { title: 'Node attachments',       product: 'Capsule', color: capsuleColor, desc: 'Attach files and images directly to nodes — stored alongside your project data.', tags: ['Capsule'], when: 'Q3 2026' },
+  { title: 'Slack notifications',    product: 'Platform', color: accentBlue,  desc: 'Get notified in Slack when nodes or deals are updated. Reply to add comments.', tags: ['Integrations'], when: 'Q3 2026' },
+  { title: 'AI layout suggestions',  product: 'Capsule', color: capsuleColor, desc: 'One-click AI that rearranges and groups canvas nodes by theme.', tags: ['AI'], when: 'Q3 2026' },
+  { title: 'Self-serve billing',     product: 'Platform', color: accentBlue,  desc: 'Upgrade to Pro in-app with card payments. Team plan with seat management.', tags: ['Platform'], when: 'Q3 2026' },
+  { title: 'CRM automation engine',  product: 'CRM',     color: crmColor,     desc: 'Trigger-based automations: move deals, assign tasks, send emails on conditions.', tags: ['CRM'], when: 'Q4 2026' },
+  { title: 'Mobile app',             product: 'Platform', color: accentBlue,  desc: 'Native iOS and Android companion for viewing and editing on the go.', tags: ['Mobile'], when: 'Q4 2026' },
+  { title: 'GitHub integration',     product: 'Capsule', color: capsuleColor, desc: 'Link nodes to GitHub issues and PRs. Auto-update status when issues close.', tags: ['Integrations'], when: 'Q4 2026' },
+  { title: 'SSO / SAML',            product: 'Platform', color: accentBlue,  desc: 'Enterprise single sign-on via SAML 2.0. For Team plan and above.', tags: ['Platform'], when: 'Exploring' },
+  { title: 'AI operational insights',product: 'Platform', color: accentBlue,  desc: 'Cross-product AI that surfaces blockers, risks, and progress across your workspace.', tags: ['AI'], when: 'Exploring' },
+  { title: 'Offline mode',           product: 'Capsule', color: capsuleColor, desc: 'Full offline editing with automatic sync when you reconnect.', tags: ['Capsule'], when: 'Exploring' },
 ]
 
 const TAG_COLORS = {
-  Core:         { bg: '#DEEBFF', text: '#0052CC' },
-  UX:           { bg: '#E3FCEF', text: '#006644' },
-  Search:       { bg: '#FFF0B3', text: '#172B4D' },
-  Collab:       { bg: '#EAE6FF', text: '#403294' },
-  Integrations: { bg: '#FFEBE6', text: '#BF2600' },
-  Agile:        { bg: '#E3FCEF', text: '#006644' },
-  Views:        { bg: '#DEEBFF', text: '#0052CC' },
-  Export:       { bg: '#F4F5F7', text: '#5E6C84' },
-  AI:           { bg: '#FFF0B3', text: '#172B4D' },
-  Monetisation: { bg: '#FFEBE6', text: '#BF2600' },
-  Mobile:       { bg: '#EAE6FF', text: '#403294' },
-  Canvas:       { bg: '#DEEBFF', text: '#0052CC' },
-  Transparency: { bg: '#E3FCEF', text: '#006644' },
+  Capsule:      { bg: capsuleColor + '20', text: capsuleColor },
+  CRM:          { bg: crmColor + '20',     text: crmColor },
+  Wiki:         { bg: wikiColor + '20',    text: wikiColor },
+  Platform:     { bg: accentBlue + '20',   text: accentBlue },
+  Collab:       { bg: '#A371F720',         text: '#A371F7' },
+  Integrations: { bg: '#F8514920',         text: '#F85149' },
+  Agile:        { bg: crmColor + '20',     text: crmColor },
+  Views:        { bg: capsuleColor + '20', text: capsuleColor },
+  Export:       { bg: '#484F5820',         text: textSecondary },
+  AI:           { bg: wikiColor + '20',    text: wikiColor },
+  Search:       { bg: accentBlue + '20',   text: accentBlue },
+  UX:           { bg: crmColor + '20',     text: crmColor },
+  Mobile:       { bg: '#A371F720',         text: '#A371F7' },
 }
 
 export default function RoadmapPage() {
   const [activeTag, setActiveTag] = useState(null)
 
-  const allTags = [...new Set(QUARTERS.flatMap(q => q.items.flatMap(i => i.tags)))]
+  const allTags = [...new Set([...AVAILABLE, ...COMING].flatMap(i => i.tags))]
+
+  const filteredAvailable = activeTag ? AVAILABLE.filter(i => i.tags.includes(activeTag)) : AVAILABLE
+  const filteredComing    = activeTag ? COMING.filter(i => i.tags.includes(activeTag)) : COMING
 
   return (
-    <div style={{ background: '#FAFBFC', color: navy, fontFamily: "-apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif", minHeight: '100vh' }}>
+    <div style={{ background: bgPrimary, color: textPrimary, fontFamily: "-apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif", minHeight: '100vh' }}>
       <Navbar />
 
       {/* Hero */}
-      <section style={{ background: heroBlue, minHeight: '48vh', display: 'flex', alignItems: 'center', padding: '0 8vw', position: 'relative', overflow: 'hidden' }}>
-        <div style={{ position: 'absolute', top: '-20%', right: '-5%', width: 600, height: 600, borderRadius: '50%', background: 'radial-gradient(circle, rgba(76,154,255,0.15) 0%, transparent 65%)', pointerEvents: 'none' }} />
-        <div style={{ position: 'absolute', right: '-1%', bottom: '4%', fontSize: 'clamp(60px, 11vw, 150px)', fontWeight: 900, color: 'rgba(255,255,255,0.04)', letterSpacing: '-0.04em', lineHeight: 1, userSelect: 'none', pointerEvents: 'none' }}>ROADMAP</div>
-        <div style={{ position: 'relative', zIndex: 1, maxWidth: 680, width: '100%' }}>
-          <SectionLabel dark>Roadmap</SectionLabel>
-          <h1 style={{ fontSize: 'clamp(2rem, 5vw, 4rem)', fontWeight: 900, letterSpacing: '-0.04em', lineHeight: 1.08, marginBottom: 22, color: '#fff' }}>
-            What we're<br /><span style={{ color: bluePale }}>building next</span>
+      <section style={{ background: bgPrimary, padding: '80px 24px 60px', position: 'relative', overflow: 'hidden' }}>
+        <div style={{ position: 'absolute', top: '10%', left: '50%', transform: 'translateX(-50%)', width: 600, height: 300, background: `radial-gradient(ellipse at center, ${accentBlue}0C 0%, transparent 70%)`, pointerEvents: 'none' }} />
+        <div style={{ maxWidth: 680, margin: '0 auto', textAlign: 'center', position: 'relative' }}>
+          <SectionLabel>Roadmap</SectionLabel>
+          <h1 style={{ fontSize: 'clamp(2.25rem, 5vw, 3.25rem)', fontWeight: 800, color: textPrimary, lineHeight: 1.15, letterSpacing: '-0.03em', margin: '0 0 16px' }}>
+            What we're building next
           </h1>
-          <p style={{ fontSize: '1rem', color: 'rgba(255,255,255,0.65)', lineHeight: 1.78, maxWidth: 500, marginBottom: 0 }}>
-            This is our public roadmap — updated every sprint. Have a feature request? Reach us at{' '}
-            <a href="mailto:feedback@bahn.app" style={{ color: bluePale, textDecoration: 'none', borderBottom: '1px solid rgba(76,154,255,0.45)' }}>feedback@bahn.app</a>
+          <p style={{ fontSize: '1rem', color: textSecondary, lineHeight: 1.7, margin: '0 auto 10px', maxWidth: 520 }}>
+            Public roadmap — updated every sprint. Have a feature request?{' '}
+            <a href="mailto:feedback@bahn.app" style={{ color: accentBlue, textDecoration: 'none' }}>feedback@bahn.app</a>
           </p>
         </div>
       </section>
 
       {/* Tag filter */}
-      <div style={{ maxWidth: 980, margin: '0 auto', padding: '32px 32px 0', display: 'flex', flexWrap: 'wrap', gap: 8, alignItems: 'center' }}>
-        <span style={{ fontSize: '0.75rem', fontWeight: 600, color: textSubtle, marginRight: 4 }}>Filter:</span>
-        <button
-          onClick={() => setActiveTag(null)}
-          style={{
-            padding: '3px 12px', borderRadius: 20, fontSize: '0.75rem', fontWeight: 600,
-            border: `1px solid ${activeTag === null ? navy : border}`,
-            background: activeTag === null ? navy : '#fff',
-            color: activeTag === null ? '#fff' : textSubtle,
-            cursor: 'pointer',
-          }}
-        >
+      <div style={{ maxWidth: 1100, margin: '0 auto', padding: '0 24px 32px', display: 'flex', flexWrap: 'wrap', gap: 8, alignItems: 'center' }}>
+        <span style={{ fontSize: '0.75rem', fontWeight: 600, color: textMuted, marginRight: 4 }}>Filter:</span>
+        <button onClick={() => setActiveTag(null)}
+          style={{ padding: '3px 12px', borderRadius: 20, fontSize: '0.75rem', fontWeight: 600, cursor: 'pointer', border: `1px solid ${activeTag === null ? textPrimary : borderColor}`, background: activeTag === null ? textPrimary : 'none', color: activeTag === null ? bgPrimary : textSecondary }}>
           All
         </button>
         {allTags.map(tag => {
-          const c = TAG_COLORS[tag] || { bg: '#F4F5F7', text: '#5E6C84' }
+          const c = TAG_COLORS[tag] || { bg: bgElevated, text: textSecondary }
           const isActive = activeTag === tag
           return (
-            <button
-              key={tag}
-              onClick={() => setActiveTag(isActive ? null : tag)}
-              style={{
-                padding: '3px 12px', borderRadius: 20, fontSize: '0.75rem', fontWeight: 600,
-                border: `1px solid ${isActive ? c.text : border}`,
-                background: isActive ? c.bg : '#fff',
-                color: isActive ? c.text : textSubtle,
-                cursor: 'pointer',
-              }}
-            >
+            <button key={tag} onClick={() => setActiveTag(isActive ? null : tag)}
+              style={{ padding: '3px 12px', borderRadius: 20, fontSize: '0.75rem', fontWeight: 600, cursor: 'pointer', border: `1px solid ${isActive ? c.text : borderColor}`, background: isActive ? c.bg : 'none', color: isActive ? c.text : textSecondary }}>
               {tag}
             </button>
           )
         })}
       </div>
 
-      {/* Roadmap columns */}
-      <div style={{ maxWidth: 980, margin: '0 auto', padding: '32px 32px 80px', display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(220px, 1fr))', gap: 20, alignItems: 'start' }}>
-        {QUARTERS.map(q => {
-          const filtered = activeTag ? q.items.filter(i => i.tags.includes(activeTag)) : q.items
-          if (activeTag && filtered.length === 0) return null
-          return (
-            <div key={q.quarter}>
-              <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 14 }}>
-                <span style={{ width: 8, height: 8, borderRadius: '50%', background: q.color.dot, display: 'inline-block', flexShrink: 0 }} />
-                <h2 style={{ fontSize: '0.8125rem', fontWeight: 700, color: navy, margin: 0 }}>{q.quarter}</h2>
-                <span style={{ fontSize: 11, fontWeight: 700, background: q.color.bg, color: q.color.text, borderRadius: 4, padding: '2px 7px' }}>
-                  {q.label}
-                </span>
-              </div>
-              <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
-                {filtered.map(item => (
-                  <div key={item.title} style={{ background: '#fff', border: `1px solid ${border}`, borderRadius: 8, padding: '14px 14px 12px' }}>
-                    <div style={{ fontSize: '0.875rem', fontWeight: 700, color: navy, marginBottom: 5 }}>{item.title}</div>
-                    <div style={{ fontSize: '0.8rem', color: textSubtle, lineHeight: 1.55, marginBottom: 10 }}>{item.desc}</div>
-                    <div style={{ display: 'flex', flexWrap: 'wrap', gap: 4 }}>
-                      {item.tags.map(tag => {
-                        const c = TAG_COLORS[tag] || { bg: '#F4F5F7', text: '#5E6C84' }
-                        return (
-                          <span key={tag} style={{ fontSize: 10, fontWeight: 700, background: c.bg, color: c.text, borderRadius: 3, padding: '1px 6px' }}>
-                            {tag}
-                          </span>
-                        )
-                      })}
-                    </div>
-                  </div>
-                ))}
-              </div>
+      {/* Two-column layout */}
+      <section style={{ maxWidth: 1100, margin: '0 auto', padding: '0 24px 80px', display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 32, alignItems: 'start' }}>
+
+        {/* Column 1: Available Now */}
+        <div>
+          <div style={{ display: 'flex', alignItems: 'center', gap: 10, marginBottom: 24, padding: '12px 16px', background: statusGreen + '10', border: `1px solid ${statusGreen}30`, borderRadius: 8 }}>
+            <span style={{ color: statusGreen, fontSize: '1rem' }}>✓</span>
+            <div>
+              <div style={{ fontSize: '0.875rem', fontWeight: 700, color: statusGreen }}>Available now</div>
+              <div style={{ fontSize: '0.75rem', color: textMuted }}>Shipped and in your account today</div>
             </div>
-          )
-        })}
-      </div>
+          </div>
+          <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
+            {filteredAvailable.length === 0
+              ? <p style={{ fontSize: '0.875rem', color: textMuted, padding: '20px 0' }}>No items match this filter.</p>
+              : filteredAvailable.map((item, i) => (
+                <div key={i} style={{ background: bgSecondary, border: `1px solid ${borderColor}`, borderRadius: 8, padding: '14px 16px' }}>
+                  <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', gap: 8, marginBottom: 4 }}>
+                    <div style={{ fontSize: '0.875rem', fontWeight: 600, color: textPrimary }}>{item.title}</div>
+                    <span style={{ color: statusGreen, fontSize: '0.875rem', flexShrink: 0 }}>✓</span>
+                  </div>
+                  <div style={{ fontSize: '0.8125rem', color: textSecondary, lineHeight: 1.5, marginBottom: 10 }}>{item.desc}</div>
+                  <div style={{ display: 'flex', flexWrap: 'wrap', gap: 4 }}>
+                    <span style={{ fontSize: '0.625rem', fontWeight: 700, background: item.color + '20', color: item.color, borderRadius: 4, padding: '2px 6px' }}>{item.product}</span>
+                    {item.tags.filter(t => t !== item.product).map(tag => {
+                      const c = TAG_COLORS[tag] || { bg: bgElevated, text: textSecondary }
+                      return <span key={tag} style={{ fontSize: '0.625rem', fontWeight: 700, background: c.bg, color: c.text, borderRadius: 4, padding: '2px 6px' }}>{tag}</span>
+                    })}
+                  </div>
+                </div>
+              ))
+            }
+          </div>
+        </div>
+
+        {/* Column 2: Coming Soon */}
+        <div>
+          <div style={{ display: 'flex', alignItems: 'center', gap: 10, marginBottom: 24, padding: '12px 16px', background: bgSecondary, border: `1px solid ${borderColor}`, borderRadius: 8 }}>
+            <span style={{ color: textMuted, fontSize: '1rem' }}>⟳</span>
+            <div>
+              <div style={{ fontSize: '0.875rem', fontWeight: 700, color: textSecondary }}>Coming soon</div>
+              <div style={{ fontSize: '0.75rem', color: textMuted }}>Planned or actively being built</div>
+            </div>
+          </div>
+          <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
+            {filteredComing.length === 0
+              ? <p style={{ fontSize: '0.875rem', color: textMuted, padding: '20px 0' }}>No items match this filter.</p>
+              : filteredComing.map((item, i) => (
+                <div key={i} style={{ background: bgSecondary, border: `1px dashed ${borderColor}`, borderRadius: 8, padding: '14px 16px', opacity: 0.8 }}>
+                  <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', gap: 8, marginBottom: 4 }}>
+                    <div style={{ fontSize: '0.875rem', fontWeight: 600, color: textSecondary }}>{item.title}</div>
+                    <span style={{ fontSize: '0.6875rem', fontWeight: 600, color: textMuted, background: bgElevated, border: `1px solid ${borderColor}`, padding: '2px 7px', borderRadius: 4, whiteSpace: 'nowrap', flexShrink: 0 }}>{item.when}</span>
+                  </div>
+                  <div style={{ fontSize: '0.8125rem', color: textMuted, lineHeight: 1.5, marginBottom: 10 }}>{item.desc}</div>
+                  <div style={{ display: 'flex', flexWrap: 'wrap', gap: 4 }}>
+                    <span style={{ fontSize: '0.625rem', fontWeight: 700, background: item.color + '15', color: item.color + 'B0', borderRadius: 4, padding: '2px 6px' }}>{item.product}</span>
+                    {item.tags.filter(t => t !== item.product).map(tag => {
+                      const c = TAG_COLORS[tag] || { bg: bgElevated, text: textSecondary }
+                      return <span key={tag} style={{ fontSize: '0.625rem', fontWeight: 700, background: c.bg, color: c.text + '80', borderRadius: 4, padding: '2px 6px' }}>{tag}</span>
+                    })}
+                  </div>
+                </div>
+              ))
+            }
+          </div>
+        </div>
+      </section>
+
+      {/* CTA band */}
+      <section style={{ background: bgBand, borderTop: `1px solid ${borderColor}`, padding: '48px 24px', textAlign: 'center' }}>
+        <div style={{ maxWidth: 560, margin: '0 auto' }}>
+          <p style={{ fontSize: '0.875rem', color: textSecondary, margin: '0 0 8px' }}>Have a feature request?</p>
+          <a href="mailto:feedback@bahn.app" style={{ color: accentBlue, fontWeight: 600, fontSize: '0.9375rem', textDecoration: 'none' }}>feedback@bahn.app →</a>
+        </div>
+      </section>
 
       <Footer />
     </div>

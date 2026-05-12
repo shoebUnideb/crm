@@ -2,8 +2,9 @@ import { Router } from 'express'
 import {
   createUser, getUserByEmail, getUserById, getUserWithHashById, verifyPassword, signToken,
   createPasswordResetToken, validateResetToken, resetPassword, changePassword, updateAvatar,
+  createEmailOTP, verifyEmailOTP, canResendOTP,
 } from '../services/authService.js'
-import { sendPasswordResetEmail } from '../services/emailService.js'
+import { sendPasswordResetEmail, sendVerificationEmail } from '../services/emailService.js'
 import authenticate from '../middleware/authenticate.js'
 
 const router = Router()
@@ -14,9 +15,44 @@ router.post('/register', async (req, res, next) => {
   if (password.length < 8) return res.status(400).json({ error: 'Password must be at least 8 characters' })
   try {
     const existing = await getUserByEmail(email)
-    if (existing) return res.status(409).json({ error: 'An account with this email already exists' })
+    if (existing) {
+      if (!existing.email_verified) {
+        const otp = await createEmailOTP(email)
+        try { await sendVerificationEmail(email, otp) } catch (e) { console.error('Email send failed:', e.message) }
+        return res.status(200).json({ needsVerification: true })
+      }
+      return res.status(409).json({ error: 'An account with this email already exists' })
+    }
     const user = await createUser({ email, password })
-    res.status(201).json({ token: signToken(user.id, user.email), user: { id: user.id, email: user.email } })
+    const otp = await createEmailOTP(user.email)
+    try { await sendVerificationEmail(user.email, otp) } catch (e) { console.error('Email send failed:', e.message) }
+    res.status(201).json({ needsVerification: true })
+  } catch (err) { next(err) }
+})
+
+router.post('/verify-email', async (req, res, next) => {
+  const { email, otp } = req.body
+  if (!email || !otp) return res.status(400).json({ error: 'Email and code are required' })
+  try {
+    const result = await verifyEmailOTP(email, otp)
+    if (result.error) return res.status(400).json({ error: result.error })
+    const user = result.user
+    res.json({ token: signToken(user.id, user.email), user: { id: user.id, email: user.email, avatar: user.avatar || null } })
+  } catch (err) { next(err) }
+})
+
+router.post('/resend-otp', async (req, res, next) => {
+  const { email } = req.body
+  if (!email) return res.status(400).json({ error: 'Email is required' })
+  try {
+    const user = await getUserByEmail(email)
+    if (!user) return res.status(404).json({ error: 'No account found with this email' })
+    if (user.email_verified) return res.status(400).json({ error: 'This email is already verified' })
+    const ok = await canResendOTP(email)
+    if (!ok) return res.status(429).json({ error: 'Please wait 60 seconds before requesting a new code' })
+    const otp = await createEmailOTP(email)
+    try { await sendVerificationEmail(email, otp) } catch (e) { console.error('Email send failed:', e.message) }
+    res.json({ message: 'Verification code sent' })
   } catch (err) { next(err) }
 })
 
@@ -27,6 +63,11 @@ router.post('/login', async (req, res, next) => {
     const user = await getUserByEmail(email)
     if (!user || !(await verifyPassword(password, user.password_hash))) {
       return res.status(401).json({ error: 'Invalid email or password' })
+    }
+    if (!user.email_verified) {
+      const otp = await createEmailOTP(user.email)
+      try { await sendVerificationEmail(user.email, otp) } catch (e) { console.error('Email send failed:', e.message) }
+      return res.status(200).json({ needsVerification: true, email: user.email })
     }
     res.json({ token: signToken(user.id, user.email), user: { id: user.id, email: user.email, avatar: user.avatar || null } })
   } catch (err) { next(err) }

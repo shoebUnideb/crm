@@ -59,6 +59,18 @@ export async function initDb() {
   `)
   await p.query(`ALTER TABLE users ADD COLUMN IF NOT EXISTS avatar TEXT`)
   await p.query(`ALTER TABLE users ADD COLUMN IF NOT EXISTS is_admin BOOLEAN DEFAULT false`)
+  await p.query(`ALTER TABLE users ADD COLUMN IF NOT EXISTS email_verified BOOLEAN DEFAULT true`)
+  await p.query(`
+    CREATE TABLE IF NOT EXISTS email_verifications (
+      id SERIAL PRIMARY KEY,
+      email VARCHAR(255) NOT NULL,
+      otp VARCHAR(6) NOT NULL,
+      expires_at TIMESTAMPTZ NOT NULL,
+      attempts INTEGER DEFAULT 0,
+      created_at TIMESTAMPTZ DEFAULT NOW()
+    )
+  `)
+  await p.query(`CREATE INDEX IF NOT EXISTS idx_email_verifications_email ON email_verifications(email)`)
   await p.query(`ALTER TABLE project_members ADD COLUMN IF NOT EXISTS scope VARCHAR(50) DEFAULT 'project'`)
   await p.query(`ALTER TABLE project_invites ADD COLUMN IF NOT EXISTS scope VARCHAR(50) DEFAULT 'project'`)
   await p.query(`

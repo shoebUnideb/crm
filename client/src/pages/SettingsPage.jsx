@@ -1191,7 +1191,7 @@ export default function SettingsPage() {
   return (
     <div style={{ minHeight: '100vh', background: bg, fontFamily: "-apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif" }}>
       {/* Top bar */}
-      <div style={{ background: navy, height: 56, display: 'flex', alignItems: 'center', padding: '0 20px' }}>
+      <div style={{ background: navy, height: 42, display: 'flex', alignItems: 'center', padding: '0 20px' }}>
         <div style={{ width: '100%', display: 'flex', alignItems: 'center' }}>
         <Link to="/" style={{ display: 'flex', alignItems: 'center', gap: 7, textDecoration: 'none' }}>
           <svg width="28" height="28" viewBox="0 0 30 30" fill="none">
@@ -1206,7 +1206,7 @@ export default function SettingsPage() {
           <Link to="/app/canvas" style={{ background: blue, color: '#fff', textDecoration: 'none', fontWeight: 600, fontSize: '0.8125rem', borderRadius: 3, padding: '6px 14px' }}
             onMouseEnter={e => { e.currentTarget.style.background = blueHover }}
             onMouseLeave={e => { e.currentTarget.style.background = blue }}
-          >Open App</Link>
+          >Open Workstation</Link>
         </div>
         </div>
       </div>

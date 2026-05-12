@@ -71,7 +71,7 @@ export default function LoginPage() {
       const data = await res.json()
       if (!res.ok) { setError(data.error || 'Login failed'); return }
       login(data.token, data.user)
-      navigate('/app/canvas')
+      navigate('/app/canvas-info')
   }
 
   return (
@@ -181,7 +181,7 @@ export default function LoginPage() {
             <div style={{ flex: 1, height: 1, background: border }} />
           </div>
 
-          <button type="button" onClick={() => { loginAsGuest(); navigate('/app/canvas') }}
+          <button type="button" onClick={() => { loginAsGuest(); navigate('/app/canvas-info') }}
             style={{ width: '100%', padding: '9px', borderRadius: 3, fontWeight: 500, fontSize: '0.875rem', background: bg, color: navy, border: `2px solid ${border}`, cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 8 }}
             onMouseEnter={e => { e.currentTarget.style.background = '#EBECF0'; e.currentTarget.style.borderColor = '#C1C7D0' }}
             onMouseLeave={e => { e.currentTarget.style.background = bg; e.currentTarget.style.borderColor = border }}

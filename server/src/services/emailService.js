@@ -12,6 +12,66 @@ function createTransport() {
   return null
 }
 
+const FROM = process.env.SMTP_FROM || 'noreply@bahnos.com'
+
+export async function sendVerificationEmail(email, otp) {
+  const transporter = createTransport()
+
+  if (!transporter) {
+    console.log('\n--- EMAIL VERIFICATION OTP (dev: no SMTP configured) ---')
+    console.log(`To: ${email}`)
+    console.log(`OTP: ${otp}`)
+    console.log('--------------------------------------------------------\n')
+    return
+  }
+
+  try {
+    await transporter.sendMail({
+      from: `"bahnOS" <${FROM}>`,
+      to: email,
+      subject: `${otp} is your bahnOS verification code`,
+      html: `
+<!DOCTYPE html>
+<html>
+<body style="margin:0;padding:0;background:#F4F5F7;font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,sans-serif">
+  <table width="100%" cellpadding="0" cellspacing="0" style="padding:40px 20px">
+    <tr><td align="center">
+      <table width="480" cellpadding="0" cellspacing="0" style="background:#fff;border-radius:8px;box-shadow:0 2px 8px rgba(9,30,66,0.12);overflow:hidden">
+        <tr><td style="background:#172B4D;padding:24px 32px;text-align:center">
+          <span style="font-size:20px;font-weight:700;color:#fff;letter-spacing:-0.02em">bahnOS</span>
+        </td></tr>
+        <tr><td style="padding:36px 32px 28px">
+          <h2 style="margin:0 0 8px;font-size:22px;font-weight:700;color:#172B4D">Verify your email address</h2>
+          <p style="margin:0 0 28px;font-size:14px;color:#5E6C84;line-height:1.6">
+            Enter the code below to complete your bahnOS sign up. It expires in 15 minutes.
+          </p>
+          <div style="background:#F0F4FF;border:2px solid #B3D4FF;border-radius:8px;padding:24px;text-align:center;margin-bottom:28px">
+            <span style="font-size:40px;font-weight:800;letter-spacing:12px;color:#0052CC;font-variant-numeric:tabular-nums">${otp}</span>
+          </div>
+          <p style="margin:0;font-size:13px;color:#97A0AF;line-height:1.6">
+            If you didn't create a bahnOS account, you can safely ignore this email.
+          </p>
+        </td></tr>
+        <tr><td style="background:#FAFBFC;border-top:1px solid #DFE1E6;padding:16px 32px;text-align:center">
+          <span style="font-size:12px;color:#97A0AF">© 2025 bahnOS. All rights reserved.</span>
+        </td></tr>
+      </table>
+    </td></tr>
+  </table>
+</body>
+</html>`,
+      text: `Your bahnOS verification code is: ${otp}\n\nThis code expires in 15 minutes.\n\nIf you didn't create a bahnOS account, ignore this email.`,
+    })
+  } catch (err) {
+    console.log('\n--- EMAIL VERIFICATION OTP (SMTP failed — use this code to test) ---')
+    console.log(`To: ${email}`)
+    console.log(`OTP: ${otp}`)
+    console.log(`Error: ${err.message}`)
+    console.log('--------------------------------------------------------------------\n')
+    throw err
+  }
+}
+
 export async function sendPasswordResetEmail(email, resetToken) {
   const resetUrl = `${process.env.CLIENT_URL || 'http://localhost:5173'}/reset-password?token=${resetToken}`
   const transporter = createTransport()
@@ -25,9 +85,9 @@ export async function sendPasswordResetEmail(email, resetToken) {
   }
 
   await transporter.sendMail({
-    from: process.env.SMTP_FROM || 'noreply@chart-to-jira.com',
+    from: `"bahnOS" <${FROM}>`,
     to: email,
-    subject: 'Reset your chart-to-jira password',
+    subject: 'Reset your bahnOS password',
     html: `
       <p>You requested a password reset.</p>
       <p><a href="${resetUrl}">Click here to reset your password</a></p>
@@ -53,7 +113,7 @@ export async function sendInviteEmail(email, inviterEmail, projectName, role, to
   }
 
   await transporter.sendMail({
-    from: process.env.SMTP_FROM || 'noreply@chart-to-jira.com',
+    from: `"bahnOS" <${FROM}>`,
     to: email,
     subject: `${inviterEmail} invited you to collaborate on "${projectName}"`,
     html: `
