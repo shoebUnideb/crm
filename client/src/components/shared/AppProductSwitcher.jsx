@@ -71,8 +71,8 @@ const PRODUCTS = [
     label: 'bahn Engine',
     path: null,
     subtitle: 'Operational execution',
-    accent: '#F97316',
-    accentBg: '#fff7ed',
+    accent: '#8B5CF6',
+    accentBg: '#f5f3ff',
     comingSoon: true,
     icon: (
       <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
@@ -87,8 +87,8 @@ const PRODUCTS = [
     label: 'bahn Radar',
     path: null,
     subtitle: 'Operational awareness',
-    accent: '#06B6D4',
-    accentBg: '#ecfeff',
+    accent: '#DC2626',
+    accentBg: '#fef2f2',
     comingSoon: true,
     icon: (
       <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
