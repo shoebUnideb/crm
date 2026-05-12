@@ -78,6 +78,46 @@ const PRODUCTS = [
   },
 ]
 
+const COMING_SOON_PRODUCTS = [
+  {
+    id: 'signal',
+    label: 'bahn Signal',
+    accent: '#831843',
+    tagline: 'Team communication',
+    icon: (
+      <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+        <path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/>
+      </svg>
+    ),
+  },
+  {
+    id: 'engine',
+    label: 'bahn Engine',
+    accent: '#4c1d95',
+    tagline: 'Operational execution',
+    icon: (
+      <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+        <circle cx="12" cy="12" r="3"/>
+        <path d="M19.07 4.93l-1.41 1.41M5.34 18.66l-1.41 1.41M19.07 19.07l-1.41-1.41M5.34 5.34L3.93 3.93"/>
+        <path d="M12 2v2m0 16v2M2 12h2m16 0h2"/>
+      </svg>
+    ),
+  },
+  {
+    id: 'radar',
+    label: 'bahn Radar',
+    accent: '#7f1d1d',
+    tagline: 'Operational awareness',
+    icon: (
+      <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+        <circle cx="12" cy="12" r="10"/>
+        <circle cx="12" cy="12" r="6"/>
+        <circle cx="12" cy="12" r="2"/>
+      </svg>
+    ),
+  },
+]
+
 const SOLUTIONS = [
   { label: 'Sales teams',        to: '/solutions/sales' },
   { label: 'Engineering teams',  to: '/solutions/engineering' },
@@ -145,6 +185,36 @@ function ProductsDropdown({ onClose }) {
               <polyline points="9 18 15 12 9 6"/>
             </svg>
           </button>
+        ))}
+        <div style={{ margin: '6px 10px 4px', borderTop: `1px solid ${borderColor}`, paddingTop: 8 }}>
+          <p style={{ margin: '0 0 6px', fontSize: '0.625rem', fontWeight: 700, color: textMuted, textTransform: 'uppercase', letterSpacing: '0.1em' }}>Coming Soon</p>
+        </div>
+        {COMING_SOON_PRODUCTS.map(product => (
+          <div
+            key={product.id}
+            style={{
+              display: 'flex', alignItems: 'center', gap: 12,
+              padding: '8px 10px', borderRadius: 7,
+              borderLeft: '3px solid transparent',
+              opacity: 0.5, cursor: 'default',
+            }}
+          >
+            <div style={{
+              width: 36, height: 36, borderRadius: 8,
+              background: product.accent + '15',
+              display: 'flex', alignItems: 'center', justifyContent: 'center',
+              color: product.accent, flexShrink: 0,
+            }}>
+              {product.icon}
+            </div>
+            <div style={{ flex: 1, minWidth: 0 }}>
+              <div style={{ fontSize: '0.875rem', fontWeight: 600, color: textPrimary, marginBottom: 2, display: 'flex', alignItems: 'center', gap: 6 }}>
+                {product.label}
+                <span style={{ fontSize: '0.5rem', fontWeight: 700, background: product.accent, color: '#fff', padding: '1px 5px', borderRadius: 3, letterSpacing: '0.06em', textTransform: 'uppercase' }}>Soon</span>
+              </div>
+              <div style={{ fontSize: '0.75rem', color: textSecondary, lineHeight: 1.4 }}>{product.tagline}</div>
+            </div>
+          </div>
         ))}
       </div>
 
