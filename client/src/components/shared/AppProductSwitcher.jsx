@@ -66,6 +66,40 @@ const PRODUCTS = [
       </svg>
     ),
   },
+  {
+    id: 'engine',
+    label: 'bahn Engine',
+    path: null,
+    subtitle: 'Operational execution',
+    accent: '#F97316',
+    accentBg: '#fff7ed',
+    comingSoon: true,
+    icon: (
+      <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+        <circle cx="12" cy="12" r="3"/>
+        <path d="M19.07 4.93l-1.41 1.41M5.34 18.66l-1.41 1.41M19.07 19.07l-1.41-1.41M5.34 5.34L3.93 3.93"/>
+        <path d="M12 2v2m0 16v2M2 12h2m16 0h2"/>
+      </svg>
+    ),
+  },
+  {
+    id: 'radar',
+    label: 'bahn Radar',
+    path: null,
+    subtitle: 'Operational awareness',
+    accent: '#06B6D4',
+    accentBg: '#ecfeff',
+    comingSoon: true,
+    icon: (
+      <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+        <circle cx="12" cy="12" r="10"/>
+        <circle cx="12" cy="12" r="6"/>
+        <circle cx="12" cy="12" r="2"/>
+        <line x1="12" y1="2" x2="12" y2="6"/>
+        <line x1="12" y1="18" x2="12" y2="22"/>
+      </svg>
+    ),
+  },
 ]
 
 export default function AppProductSwitcher({ currentProduct }) {
@@ -122,11 +156,17 @@ export default function AppProductSwitcher({ currentProduct }) {
       {open && (
         <div style={{
           position: 'absolute', top: 'calc(100% + 8px)', right: 0,
-          background: '#fff', border: '1px solid #DFE1E6', borderRadius: 10,
-          boxShadow: '0 10px 32px rgba(9,30,66,0.2)', width: 200, height: 200, zIndex: 300,
-          overflow: 'hidden', display: 'flex', flexDirection: 'column',
+          background: '#fff', border: '1px solid #DFE1E6', borderRadius: 12,
+          boxShadow: '0 10px 32px rgba(9,30,66,0.2)', width: 280, zIndex: 300,
+          overflow: 'hidden',
         }}>
-          <div style={{ flex: 1, padding: 8, display: 'grid', gridTemplateColumns: 'repeat(2, 1fr)', gap: 4 }}>
+          <div style={{ padding: '12px 16px 8px', borderBottom: '1px solid #F4F5F7' }}>
+            <p style={{ margin: 0, fontSize: '0.6875rem', fontWeight: 700, color: '#97A0AF', textTransform: 'uppercase', letterSpacing: '0.06em' }}>
+              Products
+            </p>
+          </div>
+
+          <div style={{ padding: 12, display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: 6 }}>
             {PRODUCTS.map(product => {
               const isActive = product.id === currentProduct
               return (
@@ -139,7 +179,7 @@ export default function AppProductSwitcher({ currentProduct }) {
                   }}
                   style={{
                     display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center',
-                    gap: 5, padding: '10px 6px', borderRadius: 8,
+                    gap: 8, padding: '14px 8px', borderRadius: 10,
                     background: isActive ? product.accentBg : 'transparent',
                     border: isActive ? `1px solid ${product.accent}30` : '1px solid transparent',
                     cursor: product.comingSoon ? 'default' : isActive ? 'default' : 'pointer',
@@ -150,7 +190,7 @@ export default function AppProductSwitcher({ currentProduct }) {
                   onMouseLeave={e => { if (!isActive && !product.comingSoon) e.currentTarget.style.background = isActive ? product.accentBg : 'transparent' }}
                 >
                   <div style={{
-                    width: 32, height: 32, borderRadius: 8,
+                    width: 44, height: 44, borderRadius: 12,
                     display: 'flex', alignItems: 'center', justifyContent: 'center',
                     background: isActive ? product.accent : '#EBECF0',
                     color: isActive ? '#fff' : '#5E6C84',
@@ -158,22 +198,26 @@ export default function AppProductSwitcher({ currentProduct }) {
                     {product.icon}
                   </div>
                   <div style={{ textAlign: 'center' }}>
-                    <div style={{ fontSize: '0.6875rem', fontWeight: 600, color: isActive ? product.accent : '#172B4D', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 3, flexWrap: 'wrap' }}>
+                    <div style={{ fontSize: '0.75rem', fontWeight: 600, color: isActive ? product.accent : '#172B4D', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 4, flexWrap: 'wrap' }}>
                       {product.label}
                       {product.id === 'crm' && (
-                        <span style={{ fontSize: '0.45rem', fontWeight: 700, background: '#0052CC', color: '#fff', padding: '1px 3px', borderRadius: 3, letterSpacing: '0.06em', textTransform: 'uppercase' }}>Beta</span>
+                        <span style={{ fontSize: '0.5rem', fontWeight: 700, background: '#0052CC', color: '#fff', padding: '1px 4px', borderRadius: 3, letterSpacing: '0.06em', textTransform: 'uppercase' }}>Beta</span>
                       )}
                       {product.comingSoon && (
-                        <span style={{ fontSize: '0.45rem', fontWeight: 700, background: '#E91E8C', color: '#fff', padding: '1px 3px', borderRadius: 3, letterSpacing: '0.06em', textTransform: 'uppercase' }}>Soon</span>
+                        <span style={{ fontSize: '0.5rem', fontWeight: 700, background: '#E91E8C', color: '#fff', padding: '1px 4px', borderRadius: 3, letterSpacing: '0.06em', textTransform: 'uppercase' }}>Soon</span>
                       )}
                     </div>
-                    <div style={{ fontSize: '0.55rem', color: '#97A0AF', marginTop: 1 }}>
+                    <div style={{ fontSize: '0.625rem', color: '#97A0AF', marginTop: 1 }}>
                       {product.subtitle}
                     </div>
                   </div>
                 </button>
               )
             })}
+          </div>
+
+          <div style={{ padding: '8px 16px 10px', borderTop: '1px solid #F4F5F7' }}>
+            <p style={{ margin: 0, fontSize: '0.6875rem', color: '#B3BAC5' }}>bahnOS · All products included</p>
           </div>
         </div>
       )}
