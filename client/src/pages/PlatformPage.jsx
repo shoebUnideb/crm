@@ -298,7 +298,7 @@ function ConnectionFlowsSection() {
           {FLOWS.map(f => (
             <button key={f.id} onClick={() => setActive(f.id)}
               style={{
-                padding: '8px 20px', borderRadius: 6, border: 'none', cursor: 'pointer',
+                padding: '8px 20px', borderRadius: 6, cursor: 'pointer',
                 fontSize: '0.8125rem', fontWeight: active === f.id ? 600 : 400,
                 background: active === f.id ? BLUE : BG,
                 color: active === f.id ? '#fff' : SUBTLE,
