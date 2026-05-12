@@ -12,7 +12,7 @@ function createTransport() {
   return null
 }
 
-const FROM = process.env.SMTP_FROM || 'noreply@bahnos.com'
+function getFrom() { return process.env.SMTP_FROM || 'noreply@bahnos.com' }
 
 export async function sendVerificationEmail(email, otp) {
   const transporter = createTransport()
@@ -27,7 +27,7 @@ export async function sendVerificationEmail(email, otp) {
 
   try {
     await transporter.sendMail({
-      from: `"bahnOS" <${FROM}>`,
+      from: `"bahnOS" <${getFrom()}>`,
       to: email,
       subject: `${otp} is your bahnOS verification code`,
       html: `
