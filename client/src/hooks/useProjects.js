@@ -6,7 +6,7 @@ import {
   MOVE_NODE, SET_SHAPE, ADD_EDGE, DELETE_EDGE, APPLY_LAYOUT,
   DUPLICATE_NODE, EDIT_NODE_NOTES,
   COLLAPSE_ALL, EXPAND_ALL, AUTO_COLOR, SET_NODE_URL, PASTE_SUBTREE, BULK_DELETE,
-  SET_NODE_META, ADD_NODE_COMMENT, DELETE_NODE_COMMENT, COLLAPSE_TO_DEPTH, APPLY_JIRA_KEYS,
+  SET_NODE_META, ADD_NODE_COMMENT, DELETE_NODE_COMMENT, EDIT_NODE_COMMENT, COLLAPSE_TO_DEPTH, APPLY_JIRA_KEYS,
   SET_EDGE_TYPE, ADD_GROUP, DELETE_GROUP, RENAME_GROUP, APPLY_RADIAL_LAYOUT,
   TOGGLE_LOCK, TOGGLE_REACTION, ADD_AUDIT_ENTRY, REPARENT_NODE, SET_NODE_CHECKLIST, SET_EDGE_LABEL,
   SET_CUSTOM_FIELDS, MERGE_NODE, SPLIT_NODE,
@@ -624,17 +624,14 @@ export function useProjects(userId) {
     const now = new Date().toISOString()
     const SHAPE_H = { rect: 44, circle: 80, diamond: 70, sticky: 90 }
     let nodes = treeData.nodes || {}
-    const needsLayout = Object.values(nodes).some(n => n.x == null || n.y == null)
-    if (needsLayout) {
-      const positions = computeLayout(nodes, treeData.rootId)
-      nodes = { ...nodes }
-      for (const [id, pos] of Object.entries(positions)) {
-        const shape = nodes[id]?.shape ?? 'rect'
-        nodes[id] = { ...nodes[id], x: pos.x, y: pos.y + (SHAPE_H[shape] ?? 44) / 2, shape }
-      }
-      for (const id of Object.keys(nodes)) {
-        if (nodes[id].x == null) nodes[id] = { ...nodes[id], x: 0, y: 0, shape: 'rect' }
-      }
+    const positions = computeLayout(nodes, treeData.rootId)
+    nodes = { ...nodes }
+    for (const [id, pos] of Object.entries(positions)) {
+      const shape = nodes[id]?.shape ?? 'rect'
+      nodes[id] = { ...nodes[id], x: pos.x, y: pos.y + (SHAPE_H[shape] ?? 44) / 2, shape }
+    }
+    for (const id of Object.keys(nodes)) {
+      if (nodes[id].x == null) nodes[id] = { ...nodes[id], x: 0, y: 0, shape: 'rect' }
     }
     const map = {
       id: mapId,
@@ -1129,6 +1126,7 @@ export function useProjects(userId) {
     setNodeMeta: (nodeId, meta) => dispatchTree({ type: SET_NODE_META, nodeId, meta }),
     addComment: (nodeId, text, author) => dispatchTree({ type: ADD_NODE_COMMENT, nodeId, text, author }),
     deleteComment: (nodeId, commentId) => dispatchTree({ type: DELETE_NODE_COMMENT, nodeId, commentId }),
+    editComment: (nodeId, commentId, text) => dispatchTree({ type: EDIT_NODE_COMMENT, nodeId, commentId, text }),
     collapseToDepth: (depth) => dispatchTree({ type: COLLAPSE_TO_DEPTH, depth }),
     applyJiraKeys: (keyMap) => dispatchTree({ type: APPLY_JIRA_KEYS, keyMap }),
     setEdgeType: (edgeId, edgeType) => dispatchTree({ type: SET_EDGE_TYPE, edgeId, edgeType }),

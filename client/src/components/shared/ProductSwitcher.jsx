@@ -5,7 +5,7 @@ const PRODUCTS = [
   {
     id: 'canvas',
     label: 'Canvas',
-    path: '/canvas',
+    path: '/app/canvas',
     accent: '#6366f1',
     accentBg: '#eef2ff',
     icon: (
@@ -25,7 +25,7 @@ const PRODUCTS = [
   {
     id: 'crm',
     label: 'CRM',
-    path: '/crm',
+    path: '/app/crm',
     accent: '#10b981',
     accentBg: '#ecfdf5',
     icon: (
@@ -150,8 +150,12 @@ export default function ProductSwitcher({ currentProduct }) {
                   <div style={{
                     fontSize: '0.875rem', fontWeight: 600,
                     color: isActive ? product.accent : '#172B4D',
+                    display: 'flex', alignItems: 'center', gap: 6,
                   }}>
                     {product.label}
+                    {product.id === 'crm' && (
+                      <span style={{ fontSize: '0.5rem', fontWeight: 700, background: '#0052CC', color: '#fff', padding: '1px 5px', borderRadius: 3, letterSpacing: '0.06em', textTransform: 'uppercase' }}>Beta</span>
+                    )}
                   </div>
                   <div style={{ fontSize: '0.6875rem', color: '#97A0AF' }}>
                     {product.id === 'canvas' ? 'Mind maps & ticketing' : 'Sales pipeline & CRM'}

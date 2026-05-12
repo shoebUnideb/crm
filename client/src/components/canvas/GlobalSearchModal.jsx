@@ -104,7 +104,7 @@ export default function GlobalSearchModal({ projects, onNavigate, onClose }) {
 
   function handleSelect(r) {
     if (r.type === 'deal') {
-      navigate('/crm', { state: { openDealId: r.id } })
+      navigate('/app/crm', { state: { openDealId: r.id } })
     } else {
       onNavigate(r.projectId, r.mapId, r.nodeId)
     }

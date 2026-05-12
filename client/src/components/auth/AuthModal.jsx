@@ -103,7 +103,7 @@ function LoginView({ onClose, onRegister, onForgot }) {
       if (!res.ok) { setError(data.error || 'Login failed'); return }
       login(data.token, data.user)
       onClose()
-      navigate('/canvas')
+      navigate('/app/canvas')
     } catch {
       setError('Network error — please try again')
     } finally {
@@ -165,7 +165,7 @@ function LoginView({ onClose, onRegister, onForgot }) {
           <span style={{ fontSize: '0.75rem', color: textSubtle }}>OR</span>
           <div style={{ flex: 1, height: 1, background: border }} />
         </div>
-        <button type="button" onClick={() => { loginAsGuest(); onClose(); navigate('/canvas') }}
+        <button type="button" onClick={() => { loginAsGuest(); onClose(); navigate('/app/canvas') }}
           style={{ width: '100%', padding: '9px', borderRadius: 3, fontWeight: 500, fontSize: '0.875rem', background: bg, color: navy, border: `2px solid ${border}`, cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 8 }}
           onMouseEnter={e => { e.currentTarget.style.background = '#EBECF0'; e.currentTarget.style.borderColor = '#C1C7D0' }}
           onMouseLeave={e => { e.currentTarget.style.background = bg; e.currentTarget.style.borderColor = border }}
@@ -216,7 +216,7 @@ function RegisterView({ onClose, onLogin }) {
       if (!res.ok) { setError(data.error || 'Registration failed'); return }
       login(data.token, data.user)
       onClose()
-      navigate('/canvas')
+      navigate('/app/canvas')
     } catch {
       setError('Network error — please try again')
     } finally {

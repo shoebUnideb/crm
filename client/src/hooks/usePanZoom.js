@@ -121,29 +121,18 @@ export function usePanZoom() {
     else if (e.deltaMode === 2) { dy *= 500; dx *= 500 }
 
     // ctrlKey=true is synthesized by browsers for trackpad pinch gestures AND Ctrl+scroll
-    // Standard behavior: pinch/Ctrl+scroll = zoom, everything else = pan
-    if (e.ctrlKey) {
-      const clampedDy = Math.max(-200, Math.min(200, dy))
-      const factor = Math.exp(-clampedDy * 0.003)
-      setTransform(t => {
-        const newScale = Math.max(MIN_SCALE, Math.min(MAX_SCALE, t.scale * factor))
-        const ratio = newScale / t.scale
-        return {
-          scale: newScale,
-          translateX: cx - (cx - t.translateX) * ratio,
-          translateY: cy - (cy - t.translateY) * ratio,
-        }
-      })
-    } else {
-      // Pan: two-finger scroll or mouse wheel (shift+wheel = horizontal pan)
-      const panX = e.shiftKey ? dy : dx
-      const panY = e.shiftKey ? 0 : dy
-      setTransform(t => ({
-        ...t,
-        translateX: t.translateX - panX,
-        translateY: t.translateY - panY,
-      }))
-    }
+    // Plain scroll = zoom centered on cursor; pinch/Ctrl = same
+    const clampedDy = Math.max(-200, Math.min(200, dy))
+    const factor = Math.exp(-clampedDy * 0.003)
+    setTransform(t => {
+      const newScale = Math.max(MIN_SCALE, Math.min(MAX_SCALE, t.scale * factor))
+      const ratio = newScale / t.scale
+      return {
+        scale: newScale,
+        translateX: cx - (cx - t.translateX) * ratio,
+        translateY: cy - (cy - t.translateY) * ratio,
+      }
+    })
   }, [])
 
   const onMouseDown = useCallback((e) => {

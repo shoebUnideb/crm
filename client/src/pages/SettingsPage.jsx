@@ -1203,7 +1203,7 @@ export default function SettingsPage() {
         <span style={{ color: 'rgba(255,255,255,0.4)', margin: '0 12px' }}>/</span>
         <span style={{ color: 'rgba(255,255,255,0.8)', fontSize: '0.875rem', fontWeight: 500 }}>Settings</span>
         <div style={{ marginLeft: 'auto' }}>
-          <Link to="/canvas" style={{ background: blue, color: '#fff', textDecoration: 'none', fontWeight: 600, fontSize: '0.8125rem', borderRadius: 3, padding: '6px 14px' }}
+          <Link to="/app/canvas" style={{ background: blue, color: '#fff', textDecoration: 'none', fontWeight: 600, fontSize: '0.8125rem', borderRadius: 3, padding: '6px 14px' }}
             onMouseEnter={e => { e.currentTarget.style.background = blueHover }}
             onMouseLeave={e => { e.currentTarget.style.background = blue }}
           >Open App</Link>

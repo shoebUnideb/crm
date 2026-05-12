@@ -19,7 +19,7 @@ export default class ProductErrorBoundary extends React.Component {
 
     const { productName, accentColor } = this.props
     const otherProduct = productName === 'Canvas' ? 'CRM' : 'Canvas'
-    const otherPath = productName === 'Canvas' ? '/crm' : '/canvas'
+    const otherPath = productName === 'Canvas' ? '/app/crm' : '/canvas'
 
     return (
       <div style={{

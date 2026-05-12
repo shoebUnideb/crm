@@ -48,7 +48,7 @@ export default function InviteAcceptPage() {
     try {
       await projectsApi.acceptInvite(authToken, token)
       setAccepted(true)
-      setTimeout(() => navigate('/canvas'), 1800)
+      setTimeout(() => navigate('/app/canvas'), 1800)
     } catch (e) {
       setError(e.message)
     } finally {
@@ -103,7 +103,7 @@ export default function InviteAcceptPage() {
               <div style={{ fontSize: 40, marginBottom: 12 }}>✅</div>
               <h2 style={{ fontSize: 18, fontWeight: 700, color: navy, marginBottom: 8 }}>Invite already used</h2>
               <p style={{ fontSize: 13, color: subtle, marginBottom: 20 }}>This invite link has already been accepted.</p>
-              <button onClick={() => navigate('/canvas')} style={{ background: blue, color: '#fff', border: 'none', borderRadius: 4, padding: '9px 20px', fontWeight: 600, fontSize: 14, cursor: 'pointer' }}>Open App</button>
+              <button onClick={() => navigate('/app/canvas')} style={{ background: blue, color: '#fff', border: 'none', borderRadius: 4, padding: '9px 20px', fontWeight: 600, fontSize: 14, cursor: 'pointer' }}>Open App</button>
             </div>
           )}
 

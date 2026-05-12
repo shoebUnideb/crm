@@ -1,5 +1,5 @@
 import React, { useEffect } from 'react'
-import { Routes, Route, useNavigate, useLocation } from 'react-router-dom'
+import { Routes, Route, Navigate, useNavigate, useLocation } from 'react-router-dom'
 import ChatbotWidget from './components/chatbot/ChatbotWidget.jsx'
 import FeedbackWidget from './components/feedback/FeedbackWidget.jsx'
 import ProtectedRoute from './components/ProtectedRoute.jsx'
@@ -10,6 +10,8 @@ import FeaturesPage from './pages/FeaturesPage.jsx'
 import AboutPage from './pages/AboutPage.jsx'
 import SettingsPage from './pages/SettingsPage.jsx'
 import AdminPage from './pages/AdminPage.jsx'
+import CanvasInfoPage from './pages/CanvasInfoPage.jsx'
+import CRMInfoPage from './pages/CRMInfoPage.jsx'
 import TemplatesPage from './pages/TemplatesPage.jsx'
 import ChangelogPage from './pages/ChangelogPage.jsx'
 import DocsPage from './pages/DocsPage.jsx'
@@ -28,6 +30,8 @@ import { useAuth } from './context/AuthContext.jsx'
 // A crash in one shell never affects the other.
 const CanvasShell = React.lazy(() => import('./shells/CanvasShell.jsx'))
 const CRMShell    = React.lazy(() => import('./shells/CRMShell.jsx'))
+const DocsShell   = React.lazy(() => import('./shells/DocsShell.jsx'))
+const DocsTemplatesPage = React.lazy(() => import('./pages/DocsTemplatesPage.jsx'))
 
 // Redirects /login, /register, /forgot-password to / and opens the modal
 function OpenAuthModal({ view }) {
@@ -38,7 +42,7 @@ function OpenAuthModal({ view }) {
 
   useEffect(() => {
     if (isAuthenticated) {
-      navigate('/canvas', { replace: true })
+      navigate('/app/canvas', { replace: true })
     } else {
       if (location.state?.message) setMessage(location.state.message)
       setView(view)
@@ -63,6 +67,12 @@ function AppLoadingScreen() {
       </div>
     </div>
   )
+}
+
+function NavigateCRM() {
+  const location = useLocation()
+  const subpath = location.pathname.replace(/^\/crm\/?/, '')
+  return <Navigate to={`/app/crm/${subpath}`} replace />
 }
 
 export default function App() {
@@ -92,12 +102,21 @@ export default function App() {
           <Route path="/invite/:token" element={<InviteAcceptPage />} />
 
           {/* Protected product shells (lazy-loaded, fault-isolated) */}
-          <Route path="/canvas" element={<ProtectedRoute><CanvasShell /></ProtectedRoute>} />
-          <Route path="/crm"    element={<ProtectedRoute><CRMShell /></ProtectedRoute>} />
+          <Route path="/app/canvas" element={<ProtectedRoute><CanvasShell /></ProtectedRoute>} />
+          <Route path="/app/crm/*"  element={<ProtectedRoute><CRMShell /></ProtectedRoute>} />
+          <Route path="/app/docs/templates" element={<ProtectedRoute><DocsTemplatesPage /></ProtectedRoute>} />
+          <Route path="/app/docs/*" element={<ProtectedRoute><DocsShell /></ProtectedRoute>} />
+          <Route path="/app/canvas-info" element={<ProtectedRoute><CanvasInfoPage /></ProtectedRoute>} />
+          <Route path="/app/crm-info"    element={<ProtectedRoute><CRMInfoPage /></ProtectedRoute>} />
+          <Route path="/app/settings" element={<ProtectedRoute><SettingsPage /></ProtectedRoute>} />
+          <Route path="/app/admin"    element={<ProtectedRoute><AdminPage /></ProtectedRoute>} />
 
-          {/* Shared protected pages */}
-          <Route path="/settings" element={<ProtectedRoute><SettingsPage /></ProtectedRoute>} />
-          <Route path="/admin"    element={<ProtectedRoute><AdminPage /></ProtectedRoute>} />
+          {/* Legacy redirects */}
+          <Route path="/canvas" element={<Navigate to="/app/canvas" replace />} />
+          <Route path="/crm/*"  element={<NavigateCRM />} />
+          <Route path="/crm"    element={<Navigate to="/app/crm" replace />} />
+          <Route path="/settings" element={<Navigate to="/app/settings" replace />} />
+          <Route path="/admin"    element={<Navigate to="/app/admin" replace />} />
 
           <Route path="/roadmap" element={<RoadmapPage />} />
           <Route path="*" element={<NotFoundPage />} />

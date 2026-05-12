@@ -8,7 +8,7 @@ const COLUMNS = [
       { label: 'Home', to: '/' },
       { label: 'Features', to: '/features' },
       { label: 'Templates', to: '/templates' },
-      { label: 'Open App', to: '/canvas' },
+      { label: 'Open App', to: '/app/canvas' },
     ],
   },
   {
@@ -59,7 +59,7 @@ export default function Footer() {
               </span>
             </Link>
             <p style={{ fontSize: '0.8125rem', color: '#5E6C84', lineHeight: 1.65, maxWidth: 220 }}>
-              Visual mind-mapping that syncs directly to Jira. Plan, track, and collaborate with your team.
+              All-in-one workspace for modern teams. Visual canvas, CRM pipeline, and collaborative docs — all synced to Jira.
             </p>
           </div>
 
@@ -87,9 +87,8 @@ export default function Footer() {
         {/* Bottom bar */}
         <div style={{ marginTop: 40, paddingTop: 16, paddingBottom: 20, borderTop: '1px solid #DFE1E6', display: 'flex', alignItems: 'center', justifyContent: 'space-between', flexWrap: 'wrap', gap: 8 }}>
           <p style={{ fontSize: '0.75rem', color: '#97A0AF', margin: 0 }}>
-            
+            © {new Date().getFullYear()} bahnOS. All rights reserved.
           </p>
-          
         </div>
       </div>
     </footer>

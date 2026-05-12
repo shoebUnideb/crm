@@ -1,14 +1,12 @@
 import React, { useState, useEffect, useRef } from 'react'
-import { NavLink, useNavigate, useLocation } from 'react-router-dom'
-import { NAV_LINKS } from './config/navLinks.js'
-import { useAuthModal } from './context/AuthModalContext.jsx'
+import { useNavigate, useLocation } from 'react-router-dom'
 import Canvas from './components/canvas/Canvas.jsx'
 import JiraPanel from './components/sidebar/JiraPanel.jsx'
 import ProjectsPanel from './components/projects/ProjectsPanel.jsx'
 import DashboardPanel from './components/projects/DashboardPanel.jsx'
 import MembersPanel from './components/collaboration/MembersPanel.jsx'
 import NotificationBell from './components/notifications/NotificationBell.jsx'
-import ProductSwitcher from './components/shared/ProductSwitcher.jsx'
+import AppShell from './components/shared/AppShell.jsx'
 import TemplatesDialog, { TEMPLATES as ALL_TEMPLATES } from './components/canvas/TemplatesDialog.jsx'
 import OnboardingModal, { STORAGE_KEY as ONBOARDING_KEY } from './components/canvas/OnboardingModal.jsx'
 import GlobalSearchModal from './components/canvas/GlobalSearchModal.jsx'
@@ -22,7 +20,6 @@ import { eventBus, EVENTS } from './lib/eventBus.js'
 
 export default function TreeApp() {
   const { user, logout, isGuest } = useAuth()
-  const { openLogin } = useAuthModal()
 
   // Budget tracker: read quota from settings, compute used points from active project
   const [sprintQuota, setSprintQuota] = useState(() => {
@@ -46,7 +43,7 @@ export default function TreeApp() {
     duplicateNode, editNodeNotes,
     undo, redo, canUndo, canRedo, undoStackDepth, redoStackDepth,
     collapseAll, expandAll, autoColor, setNodeUrl, pasteSubtree, bulkDelete,
-    setNodeMeta, addComment, deleteComment, collapseToDepth, applyJiraKeys, setEdgeType,
+    setNodeMeta, addComment, deleteComment, editComment, collapseToDepth, applyJiraKeys, setEdgeType,
     addGroup, deleteGroup, renameGroup, applyRadialLayout,
     toggleLock, toggleReaction,
     reparentNode, setNodeChecklist,
@@ -114,7 +111,11 @@ export default function TreeApp() {
     applyNavigation()
   }, [location.state])
   const notifications = useNotifications(!isGuest ? getAuthToken() : null)
-  const [openPanel, setOpenPanel] = useState(null) // 'projects' | 'jira' | 'dashboard' | 'members' | null
+  const SIDEBAR_SEEN_KEY = 'chart-to-jira-sidebar-seen'
+  const [openPanel, setOpenPanel] = useState(() => { // 'projects' | 'jira' | 'dashboard' | 'members' | null
+    try { return localStorage.getItem('chart-to-jira-sidebar-seen') ? null : 'projects' } catch { return 'projects' }
+  })
+  const [hovBreadcrumb, setHovBreadcrumb] = useState(false)
   const [pendingRenameProjectId, setPendingRenameProjectId] = useState(null)
   const [saveStatus, setSaveStatus] = useState(null) // null | 'saving' | 'saved'
   const [sharingId, setSharingId] = useState(null) // project currently being shared
@@ -210,6 +211,11 @@ export default function TreeApp() {
     }
   }
 
+  // Mark sidebar as seen on first mount so subsequent visits start closed
+  useEffect(() => {
+    try { localStorage.setItem('chart-to-jira-sidebar-seen', '1') } catch {}
+  }, [])
+
   useEffect(() => {
     function onKey(e) {
       if (e.key === 'Escape') setOpenPanel(null)
@@ -226,12 +232,18 @@ export default function TreeApp() {
   // Apply template chosen on the /templates landing page
   useEffect(() => {
     const pendingId = sessionStorage.getItem('bahn_pending_template')
-    if (!pendingId) return
-    sessionStorage.removeItem('bahn_pending_template')
-    const template = ALL_TEMPLATES.find(t => t.id === pendingId)
-    if (!template) return
-    const treeData = template.build()
-    importProject({ ...treeData, name: template.name })
+    if (pendingId) {
+      sessionStorage.removeItem('bahn_pending_template')
+      const template = ALL_TEMPLATES.find(t => t.id === pendingId)
+      if (template) {
+        const treeData = template.build()
+        importProject({ ...treeData, name: template.name })
+      }
+    }
+    if (sessionStorage.getItem('bahn_open_templates')) {
+      sessionStorage.removeItem('bahn_open_templates')
+      setShowAppTemplates(true)
+    }
   }, []) // eslint-disable-line react-hooks/exhaustive-deps
 
   // Handle JQL import events from JiraPanel
@@ -296,54 +308,32 @@ export default function TreeApp() {
   }
 
   return (
-    <div className="flex flex-col h-screen w-screen overflow-hidden">
-      {/* ── App header ───────────────────────────────────────────────── */}
-      <header style={{
-        height: 56, display: 'flex', alignItems: 'center',
-        background: '#172B4D', borderBottom: '1px solid rgba(255,255,255,0.08)',
-        padding: '0 20px', flexShrink: 0, zIndex: 10,
-      }}>
-        <div style={{ width: '100%', display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 8 }}>
-
-        {/* ── LEFT: logo + page nav + project breadcrumb ───────────── */}
-        <div style={{ display: 'flex', alignItems: 'center', gap: 0, minWidth: 0 }}>
-          {/* Product switcher (logo + dropdown to switch between Canvas and CRM) */}
-          <ProductSwitcher currentProduct="canvas" />
-
-          <span style={{ width: 1, height: 18, background: 'rgba(255,255,255,0.18)', margin: '0 6px', flexShrink: 0 }} />
-
-          {/* Page nav links */}
-          {NAV_LINKS.map(({ to, label }) => (
-            <NavLink
-              key={to}
-              to={to}
-              style={({ isActive }) => ({
-                fontSize: '0.8125rem', fontWeight: 500, textDecoration: 'none',
-                padding: '5px 10px', borderRadius: 5, flexShrink: 0,
-                color: isActive ? '#fff' : 'rgba(255,255,255,0.55)',
-                background: isActive ? 'rgba(255,255,255,0.1)' : 'transparent',
-                transition: 'background 0.15s, color 0.15s',
-              })}
-              onMouseEnter={e => { if (!e.currentTarget.dataset.active) e.currentTarget.style.background = 'rgba(255,255,255,0.07)'; e.currentTarget.style.color = '#fff' }}
-              onMouseLeave={e => { const active = e.currentTarget.getAttribute('aria-current') === 'page'; e.currentTarget.style.background = active ? 'rgba(255,255,255,0.1)' : 'transparent'; e.currentTarget.style.color = active ? '#fff' : 'rgba(255,255,255,0.55)' }}
-            >
-              {label}
-            </NavLink>
-          ))}
-
-          <span style={{ width: 1, height: 18, background: 'rgba(255,255,255,0.18)', margin: '0 6px', flexShrink: 0 }} />
-
-          {/* Project breadcrumb — click opens Projects panel */}
+    <AppShell
+      currentProduct="canvas"
+      notifications={
+        !isGuest ? (
+          <NotificationBell
+            invites={notifications.invites}
+            onAccept={notifications.acceptInvite}
+            onDecline={notifications.declineInvite}
+            onProjectJoined={(projectData) => { if (projectData) loadRemoteProject(projectData) }}
+          />
+        ) : null
+      }
+      contextArea={
+        <>
+          {/* Project breadcrumb */}
+          <div style={{ position: 'relative', flexShrink: 1, minWidth: 0 }}>
           <button
             onClick={() => togglePanel('projects')}
+            onMouseEnter={e => { setHovBreadcrumb(true); if (openPanel !== 'projects') e.currentTarget.style.background = 'rgba(255,255,255,0.07)' }}
+            onMouseLeave={e => { setHovBreadcrumb(false); if (openPanel !== 'projects') e.currentTarget.style.background = 'transparent' }}
             style={{
               display: 'flex', alignItems: 'center', gap: 5,
               background: openPanel === 'projects' ? 'rgba(255,255,255,0.12)' : 'transparent',
               border: 'none', borderRadius: 4, cursor: 'pointer',
               padding: '4px 8px', maxWidth: 220, flexShrink: 1,
             }}
-            onMouseEnter={e => { if (openPanel !== 'projects') e.currentTarget.style.background = 'rgba(255,255,255,0.07)' }}
-            onMouseLeave={e => { if (openPanel !== 'projects') e.currentTarget.style.background = 'transparent' }}
           >
             <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="rgba(255,255,255,0.5)" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
               <path d="M22 19a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h5l2 3h9a2 2 0 0 1 2 2z"/>
@@ -363,86 +353,48 @@ export default function TreeApp() {
               <polyline points="6 9 12 15 18 9"/>
             </svg>
           </button>
-        </div>
+          {hovBreadcrumb && openPanel !== 'projects' && (
+            <div style={{
+              position: 'absolute', top: 'calc(100% + 6px)', left: '50%',
+              transform: 'translateX(-50%)',
+              background: '#172B4D', color: '#fff',
+              fontSize: '0.75rem', whiteSpace: 'nowrap',
+              padding: '5px 10px', borderRadius: 5,
+              pointerEvents: 'none', zIndex: 1000,
+            }}>
+              Open projects &amp; maps
+              <div style={{
+                position: 'absolute', bottom: '100%', left: '50%',
+                transform: 'translateX(-50%)',
+                border: '4px solid transparent',
+                borderBottomColor: '#172B4D',
+              }} />
+            </div>
+          )}
+          </div>
 
-        {/* ── RIGHT: tools + user ──────────────────────────────────── */}
-        <div style={{ display: 'flex', alignItems: 'center', gap: 4, flexShrink: 0 }}>
-          {/* Global search */}
-          <button
+          <div style={{ flex: 1 }} />
+
+          {/* Search */}
+          <div
             onClick={() => setShowGlobalSearch(true)}
             title="Global search (⌘K)"
             style={{
-              display: 'flex', alignItems: 'center', gap: 5,
-              padding: '5px 10px', borderRadius: 6,
-              background: 'rgba(255,255,255,0.07)', border: '1px solid rgba(255,255,255,0.12)',
-              color: 'rgba(255,255,255,0.55)', cursor: 'pointer', fontSize: '0.8rem',
-              whiteSpace: 'nowrap',
+              display: 'flex', alignItems: 'center', gap: 6,
+              background: '#F7F8FA', border: '1.5px solid #DFE1E6',
+              borderRadius: 8, padding: '5px 10px', cursor: 'pointer',
+              width: 280, flexShrink: 0,
             }}
-            onMouseEnter={e => { e.currentTarget.style.background = 'rgba(255,255,255,0.12)'; e.currentTarget.style.color = '#fff' }}
-            onMouseLeave={e => { e.currentTarget.style.background = 'rgba(255,255,255,0.07)'; e.currentTarget.style.color = 'rgba(255,255,255,0.55)' }}
           >
-            <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+            <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="#97A0AF" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
               <circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/>
             </svg>
-            <span>Search</span>
-            <kbd style={{ fontSize: 10, opacity: 0.6, border: '1px solid rgba(255,255,255,0.2)', borderRadius: 3, padding: '0 4px', background: 'rgba(0,0,0,0.2)' }}>⌘K</kbd>
-          </button>
-
-          {/* Jira */}
-          <AppNavBtn
-            active={openPanel === 'jira'}
-            onClick={() => togglePanel('jira')}
-            disabled={!state}
-            accent
-          >
-            <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71"/><path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71"/></svg>
-            Jira
-          </AppNavBtn>
-
-          {/* Share / Collab */}
-          {state && (
-            <AppNavBtn
-              active={openPanel === 'members' || !!activeCollab}
-              onClick={() => handleShareProject(activeId)}
-              title={activeCollab ? 'Manage collaborators' : 'Share for real-time collaboration'}
-            >
-              {activeCollab ? (
-                <>
-                  <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg>
-                  Collab
-                  {collab.connected && <span style={{ width: 6, height: 6, borderRadius: '50%', background: '#36B37E', flexShrink: 0 }} />}
-                </>
-              ) : (
-                <>
-                  <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><circle cx="18" cy="5" r="3"/><circle cx="6" cy="12" r="3"/><circle cx="18" cy="19" r="3"/><line x1="8.59" y1="13.51" x2="15.42" y2="17.49"/><line x1="15.41" y1="6.51" x2="8.59" y2="10.49"/></svg>
-                  Share
-                </>
-              )}
-            </AppNavBtn>
-          )}
-
-          <span style={{ width: 1, height: 18, background: 'rgba(255,255,255,0.12)', margin: '0 4px', flexShrink: 0 }} />
-
-          {!isGuest && (
-            <NotificationBell
-              invites={notifications.invites}
-              onAccept={notifications.acceptInvite}
-              onDecline={notifications.declineInvite}
-              onProjectJoined={(projectData) => { if (projectData) loadRemoteProject(projectData) }}
-            />
-          )}
-
-          {isGuest ? (
-            <button onClick={openLogin} style={{ fontSize: 12, fontWeight: 600, color: '#fff', background: 'rgba(255,255,255,0.15)', border: '1px solid rgba(255,255,255,0.25)', borderRadius: 4, padding: '4px 10px', cursor: 'pointer', flexShrink: 0 }}>
-              Sign in
-            </button>
-          ) : (
-            user && <UserMenu user={user} logout={logout} />
-          )}
-        </div>
-        </div>
-      </header>
-
+            <span style={{ fontSize: 11, color: '#97A0AF', flex: 1 }}>Search nodes, maps…</span>
+            <kbd style={{ fontSize: 9, color: '#97A0AF', border: '1px solid #DFE1E6', borderRadius: 3, padding: '0 4px', background: '#EBECF0' }}>⌘K</kbd>
+          </div>
+        </>
+      }
+    >
       <div className="flex flex-1 overflow-hidden relative">
         {state ? (
           <Canvas
@@ -478,6 +430,7 @@ export default function TreeApp() {
             onSetNodeMeta={setNodeMeta}
             onAddComment={addComment}
             onDeleteComment={deleteComment}
+            onEditComment={editComment}
             onCollapseToDepth={collapseToDepth}
             onApplyJiraKeys={applyJiraKeys}
             onSetEdgeType={setEdgeType}
@@ -666,92 +619,7 @@ export default function TreeApp() {
           onClose={() => setShowGlobalSearch(false)}
         />
       )}
-    </div>
-  )
-}
-
-function UserMenu({ user, logout }) {
-  const navigate = useNavigate()
-  const [open, setOpen] = useState(false)
-  const ref = useRef(null)
-  const initials = user.email.slice(0, 2).toUpperCase()
-
-  useEffect(() => {
-    if (!open) return
-    function handler(e) {
-      if (ref.current && !ref.current.contains(e.target)) setOpen(false)
-    }
-    document.addEventListener('mousedown', handler)
-    return () => document.removeEventListener('mousedown', handler)
-  }, [open])
-
-  return (
-    <div ref={ref} style={{ position: 'relative' }}>
-      <button onClick={() => setOpen(v => !v)} style={{
-        width: 32, height: 32, borderRadius: '50%', background: '#0052CC',
-        color: '#fff', border: open ? '2px solid #4C9AFF' : '2px solid rgba(255,255,255,0.3)',
-        cursor: 'pointer', fontWeight: 700, fontSize: '0.75rem',
-        display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0,
-        overflow: 'hidden', padding: 0,
-      }}>
-        {user.avatar
-          ? <img src={user.avatar} alt="avatar" style={{ width: '100%', height: '100%', objectFit: 'cover', borderRadius: '50%' }} />
-          : initials
-        }
-      </button>
-      {open && (
-        <div style={{
-          position: 'absolute', top: 'calc(100% + 6px)', right: 0,
-          background: '#fff', border: '1px solid #DFE1E6', borderRadius: 3,
-          boxShadow: '0 4px 8px rgba(9,30,66,0.25)', minWidth: 190, zIndex: 200, overflow: 'hidden',
-        }}>
-          <div style={{ padding: '10px 14px', borderBottom: '1px solid #DFE1E6', background: '#FAFBFC', display: 'flex', alignItems: 'center', gap: 10 }}>
-            <div style={{ width: 36, height: 36, borderRadius: '50%', overflow: 'hidden', background: '#0052CC', flexShrink: 0, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-              {user.avatar
-                ? <img src={user.avatar} alt="avatar" style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
-                : <span style={{ color: '#fff', fontWeight: 700, fontSize: '0.8125rem' }}>{initials}</span>
-              }
-            </div>
-            <div style={{ minWidth: 0 }}>
-            <p style={{ fontSize: '0.8125rem', fontWeight: 600, color: '#172B4D', margin: 0, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
-              {user.email}
-            </p>
-            <p style={{ fontSize: '0.75rem', color: '#5E6C84', margin: '2px 0 0' }}>bahnOS account</p>
-            </div>
-          </div>
-          {[
-            { label: 'Home', onClick: () => { navigate('/'); setOpen(false) } },
-            { label: 'CRM Pipeline', onClick: () => { navigate('/crm'); setOpen(false) }, crm: true },
-            { label: 'Profile & Settings', onClick: () => { navigate('/settings'); setOpen(false) } },
-            ...(user.isAdmin ? [{ label: '⚙ Admin Panel', onClick: () => { navigate('/admin'); setOpen(false) }, admin: true }] : []),
-          ].map(({ label, onClick, admin, crm }) => (
-            <button key={label} onClick={onClick} style={{
-              display: 'block', width: '100%', padding: '10px 16px', background: 'none',
-              border: 'none', cursor: 'pointer', textAlign: 'left',
-              fontSize: '0.875rem',
-              color: admin ? '#0052CC' : crm ? '#00875A' : '#172B4D',
-              fontWeight: (admin || crm) ? 600 : 'normal',
-            }}
-              onMouseEnter={e => { e.currentTarget.style.background = admin ? '#EAF0FB' : crm ? '#E3FCEF' : '#F4F5F7' }}
-              onMouseLeave={e => { e.currentTarget.style.background = 'none' }}
-            >
-              {label}
-            </button>
-          ))}
-          <div style={{ height: 1, background: '#DFE1E6' }} />
-          <button onClick={() => { logout(); navigate('/'); setOpen(false) }} style={{
-            display: 'block', width: '100%', padding: '10px 16px', background: 'none',
-            border: 'none', cursor: 'pointer', textAlign: 'left',
-            fontSize: '0.875rem', color: '#DE350B',
-          }}
-            onMouseEnter={e => { e.currentTarget.style.background = '#FFEBE6' }}
-            onMouseLeave={e => { e.currentTarget.style.background = 'none' }}
-          >
-            Sign out
-          </button>
-        </div>
-      )}
-    </div>
+    </AppShell>
   )
 }
 

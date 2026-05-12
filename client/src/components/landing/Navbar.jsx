@@ -8,7 +8,7 @@ const PRODUCTS = [
   {
     id: 'canvas',
     label: 'Canvas',
-    path: '/canvas',
+    path: '/app/canvas',
     accent: '#6366f1',
     accentBg: '#eef2ff',
     tagline: 'Mind maps & ticketing',
@@ -26,7 +26,7 @@ const PRODUCTS = [
   {
     id: 'crm',
     label: 'CRM',
-    path: '/crm',
+    path: '/app/crm',
     accent: '#10b981',
     accentBg: '#ecfdf5',
     tagline: 'Sales pipeline & deals',
@@ -37,6 +37,24 @@ const PRODUCTS = [
         <circle cx="9" cy="7" r="4"/>
         <path d="M23 21v-2a4 4 0 0 0-3-3.87"/>
         <path d="M16 3.13a4 4 0 0 1 0 7.75"/>
+      </svg>
+    ),
+  },
+  {
+    id: 'docs',
+    label: 'Wiki',
+    path: '/app/docs',
+    accent: '#F59E0B',
+    accentBg: '#FFFBEB',
+    tagline: 'Team wiki',
+    description: 'Collaborative docs with rich text, comments, and version history. Linked to your Canvas nodes.',
+    icon: (
+      <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+        <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/>
+        <polyline points="14 2 14 8 20 8"/>
+        <line x1="16" y1="13" x2="8" y2="13"/>
+        <line x1="16" y1="17" x2="8" y2="17"/>
+        <polyline points="10 9 9 9 8 9"/>
       </svg>
     ),
   },
@@ -72,7 +90,7 @@ function ProductsDropdown({ isAuthenticated, onOpenRegister, onClose }) {
     <div ref={ref} style={{
       position: 'absolute', top: 'calc(100% + 10px)', left: 0,
       background: '#fff', border: '1px solid #DFE1E6', borderRadius: 10,
-      boxShadow: '0 12px 40px rgba(9,30,66,0.18)', width: 500, zIndex: 300,
+      boxShadow: '0 12px 40px rgba(9,30,66,0.18)', width: 680, zIndex: 300,
       overflow: 'hidden',
     }}>
       {/* Header */}
@@ -83,7 +101,7 @@ function ProductsDropdown({ isAuthenticated, onOpenRegister, onClose }) {
       </div>
 
       {/* Product cards */}
-      <div style={{ padding: 8, display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 4 }}>
+      <div style={{ padding: 8, display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: 4 }}>
         {PRODUCTS.map(product => (
           <button
             key={product.id}
@@ -116,6 +134,9 @@ function ProductsDropdown({ isAuthenticated, onOpenRegister, onClose }) {
                 <span style={{ fontSize: '0.6875rem', fontWeight: 600, padding: '1px 6px', borderRadius: 4, background: product.accent, color: '#fff' }}>
                   {product.tagline}
                 </span>
+                {product.id === 'crm' && (
+                  <span style={{ fontSize: '0.5rem', fontWeight: 700, background: '#0052CC', color: '#fff', padding: '1px 5px', borderRadius: 3, letterSpacing: '0.06em', textTransform: 'uppercase' }}>Beta</span>
+                )}
               </div>
               <p style={{ margin: 0, fontSize: '0.75rem', color: '#5E6C84', lineHeight: 1.5 }}>
                 {product.description}
@@ -207,8 +228,8 @@ function UserDropdown({ user, logout, onClose }) {
         </div>
         {/* Links */}
         {[
-          { label: 'Open App', icon: '⊞', to: '/canvas' },
-          { label: 'Profile & Settings', icon: '⚙', to: '/settings' },
+          { label: 'Open App', icon: '⊞', to: '/app/canvas' },
+          { label: 'Profile & Settings', icon: '⚙', to: '/app/settings' },
         ].map(({ label, icon, to }) => (
           <button key={label} onClick={() => { navigate(to); onClose() }}
             style={{ display: 'flex', alignItems: 'center', gap: 10, width: '100%', padding: '10px 16px', background: 'none', border: 'none', cursor: 'pointer', textAlign: 'left', fontSize: '0.875rem', color: navy }}
@@ -247,14 +268,14 @@ export default function Navbar() {
     <>
       <nav style={{
         position: 'fixed', top: 0, left: 0, right: 0, zIndex: 100,
-        background: navy, height: 56, display: 'flex', alignItems: 'center',
+        background: navy, height: 42, display: 'flex', alignItems: 'center',
         padding: '0 20px', borderBottom: '1px solid rgba(255,255,255,0.08)',
       }}>
         <div style={{ width: '100%', display: 'flex', alignItems: 'center', gap: 0 }}>
 
           {/* Logo */}
           <Link to="/" style={{ display: 'flex', alignItems: 'center', gap: 7, textDecoration: 'none', padding: '0 10px 0 4px', flexShrink: 0 }}>
-            <svg width="28" height="28" viewBox="0 0 30 30" fill="none">
+            <svg width="24" height="24" viewBox="0 0 30 30" fill="none">
               <circle cx="10" cy="15" r="9" fill="#0052CC" opacity="0.9"/>
               <circle cx="20" cy="15" r="9" fill="#4C9AFF" opacity="0.85"/>
             </svg>
@@ -322,7 +343,7 @@ export default function Navbar() {
           <div className="hidden md:flex" style={{ display: 'flex', alignItems: 'center', gap: 10, marginLeft: 'auto' }}>
             {isAuthenticated && user ? (
               <>
-                <button onClick={() => navigate('/canvas')}
+                <button onClick={() => navigate('/app/canvas')}
                   style={{ background: blue, color: '#fff', border: 'none', borderRadius: 3, padding: '6px 14px', fontWeight: 600, fontSize: '0.8125rem', cursor: 'pointer' }}
                   onMouseEnter={e => { e.currentTarget.style.background = blueHover }}
                   onMouseLeave={e => { e.currentTarget.style.background = blue }}
@@ -377,7 +398,7 @@ export default function Navbar() {
 
       {/* Mobile menu */}
       {menuOpen && (
-        <div style={{ position: 'fixed', top: 56, left: 0, right: 0, zIndex: 99, background: navy, borderBottom: '2px solid rgba(255,255,255,0.1)', padding: '8px 20px 16px' }}>
+        <div style={{ position: 'fixed', top: 42, left: 0, right: 0, zIndex: 99, background: navy, borderBottom: '2px solid rgba(255,255,255,0.1)', padding: '8px 20px 16px' }}>
           {/* Products section in mobile */}
           <p style={{ fontSize: '0.6875rem', fontWeight: 700, color: 'rgba(255,255,255,0.35)', textTransform: 'uppercase', letterSpacing: '0.08em', padding: '8px 8px 6px', margin: 0 }}>Products</p>
           {PRODUCTS.map(product => (
@@ -398,7 +419,12 @@ export default function Navbar() {
                 {product.icon}
               </div>
               <div>
-                <div style={{ fontSize: '0.875rem', fontWeight: 600, color: '#fff' }}>{product.label}</div>
+                <div style={{ fontSize: '0.875rem', fontWeight: 600, color: '#fff', display: 'flex', alignItems: 'center', gap: 6 }}>
+                  {product.label}
+                  {product.id === 'crm' && (
+                    <span style={{ fontSize: '0.5rem', fontWeight: 700, background: '#0052CC', color: '#fff', padding: '1px 5px', borderRadius: 3, letterSpacing: '0.06em', textTransform: 'uppercase' }}>Beta</span>
+                  )}
+                </div>
                 <div style={{ fontSize: '0.6875rem', color: 'rgba(255,255,255,0.4)' }}>{product.tagline}</div>
               </div>
             </button>
@@ -415,8 +441,8 @@ export default function Navbar() {
             {isAuthenticated && user ? (
               <>
                 <p style={{ fontSize: '0.8125rem', color: 'rgba(255,255,255,0.5)', padding: '4px 8px' }}>{user.email}</p>
-                <Link to="/canvas" onClick={() => setMenuOpen(false)} style={{ display: 'block', textAlign: 'center', background: blue, color: '#fff', textDecoration: 'none', fontWeight: 600, borderRadius: 3, padding: '10px' }}>Open App</Link>
-                <Link to="/settings" onClick={() => setMenuOpen(false)} style={{ display: 'block', textAlign: 'center', color: 'rgba(255,255,255,0.82)', textDecoration: 'none', fontWeight: 500, padding: '8px', border: '1px solid rgba(255,255,255,0.2)', borderRadius: 3 }}>Settings</Link>
+                <Link to="/app/canvas" onClick={() => setMenuOpen(false)} style={{ display: 'block', textAlign: 'center', background: blue, color: '#fff', textDecoration: 'none', fontWeight: 600, borderRadius: 3, padding: '10px' }}>Open App</Link>
+                <Link to="/app/settings" onClick={() => setMenuOpen(false)} style={{ display: 'block', textAlign: 'center', color: 'rgba(255,255,255,0.82)', textDecoration: 'none', fontWeight: 500, padding: '8px', border: '1px solid rgba(255,255,255,0.2)', borderRadius: 3 }}>Settings</Link>
                 <button onClick={() => { logout(); navigate('/'); setMenuOpen(false) }} style={{ background: 'none', border: 'none', cursor: 'pointer', color: '#FF8F73', textAlign: 'center', fontWeight: 500, fontSize: '0.9375rem', padding: '8px' }}>Sign out</button>
               </>
             ) : (
@@ -429,7 +455,7 @@ export default function Navbar() {
         </div>
       )}
 
-      <div style={{ height: 56 }} />
+      <div style={{ height: 42 }} />
     </>
   )
 }

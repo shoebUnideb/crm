@@ -152,6 +152,70 @@ function WhyNowCard({ num, title, body, color }) {
   )
 }
 
+// ── Product card ──────────────────────────────────────────────────────────────
+function ProductCard({ accent, accentBg, icon, name, tagline, features, ctaLabel, to }) {
+  const [hov, setHov] = useState(false)
+  return (
+    <div
+      onMouseEnter={() => setHov(true)}
+      onMouseLeave={() => setHov(false)}
+      style={{
+        background: surface, border: `1px solid ${hov ? accent + '55' : border}`, borderRadius: 8,
+        overflow: 'hidden', boxShadow: hov ? '0 4px 20px rgba(9,30,66,0.1)' : 'none',
+        transition: 'all 0.18s', display: 'flex', flexDirection: 'column',
+      }}
+    >
+      <div style={{ height: 3, background: accent, flexShrink: 0 }} />
+      <div style={{ padding: '24px 24px 28px', flex: 1, display: 'flex', flexDirection: 'column' }}>
+        <div style={{ width: 36, height: 36, borderRadius: 8, background: accentBg, display: 'flex', alignItems: 'center', justifyContent: 'center', marginBottom: 14 }}>
+          {icon}
+        </div>
+        <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 14, flexWrap: 'wrap' }}>
+          <span style={{ fontSize: '1rem', fontWeight: 700, color: navy }}>{name}</span>
+          <span style={{ fontSize: '0.6875rem', fontWeight: 600, color: accent, background: accentBg, padding: '2px 8px', borderRadius: 99, flexShrink: 0 }}>{tagline}</span>
+        </div>
+        <div style={{ display: 'flex', flexDirection: 'column', gap: 7, marginBottom: 20, flex: 1 }}>
+          {features.map(f => (
+            <div key={f} style={{ display: 'flex', gap: 8, alignItems: 'flex-start', fontSize: '0.8125rem', color: subtle, lineHeight: 1.5 }}>
+              <span style={{ color: accent, fontWeight: 700, flexShrink: 0 }}>✓</span>
+              {f}
+            </div>
+          ))}
+        </div>
+        <Link to={to} style={{ fontSize: '0.8125rem', fontWeight: 600, color: accent, textDecoration: 'none' }}
+          onMouseEnter={e => { e.currentTarget.style.textDecoration = 'underline' }}
+          onMouseLeave={e => { e.currentTarget.style.textDecoration = 'none' }}
+        >{ctaLabel}</Link>
+      </div>
+    </div>
+  )
+}
+
+// ── Template category card ────────────────────────────────────────────────────
+function TemplateCategoryCard({ emoji, category, count }) {
+  const [hov, setHov] = useState(false)
+  return (
+    <Link
+      to="/templates"
+      onMouseEnter={() => setHov(true)}
+      onMouseLeave={() => setHov(false)}
+      style={{
+        display: 'flex', alignItems: 'center', gap: 14, padding: '16px 20px',
+        background: hov ? blueLight : bg,
+        border: `1px solid ${hov ? blue + '55' : border}`,
+        borderRadius: 8, textDecoration: 'none',
+        transition: 'all 0.15s',
+      }}
+    >
+      <span style={{ fontSize: '1.5rem', flexShrink: 0 }}>{emoji}</span>
+      <div>
+        <div style={{ fontSize: '0.875rem', fontWeight: 600, color: navy }}>{category}</div>
+        <div style={{ fontSize: '0.75rem', color: subtle, marginTop: 2 }}>{count}</div>
+      </div>
+    </Link>
+  )
+}
+
 // ── Page ──────────────────────────────────────────────────────────────────────
 export default function LandingPage() {
   const { isAuthenticated, user } = useAuth()
@@ -215,7 +279,7 @@ export default function LandingPage() {
           <div style={{ display: 'flex', gap: 12, flexWrap: 'wrap' }}>
             {isAuthenticated ? (
               <>
-                <Link to="/canvas" style={{ background: '#fff', color: heroBlue, textDecoration: 'none', fontWeight: 700, fontSize: '0.9375rem', borderRadius: 4, padding: '12px 28px', transition: 'background 0.15s' }}
+                <Link to="/app/canvas" style={{ background: '#fff', color: heroBlue, textDecoration: 'none', fontWeight: 700, fontSize: '0.9375rem', borderRadius: 4, padding: '12px 28px', transition: 'background 0.15s' }}
                   onMouseEnter={e => { e.currentTarget.style.background = blueLight }}
                   onMouseLeave={e => { e.currentTarget.style.background = '#fff' }}>
                   Open your workspace →
@@ -247,6 +311,175 @@ export default function LandingPage() {
         <div style={{ position: 'absolute', bottom: 28, left: '50%', transform: 'translateX(-50%)', display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 6, opacity: 0.3 }}>
           <span style={{ fontSize: '0.625rem', letterSpacing: '0.12em', textTransform: 'uppercase', color: '#fff' }}>Scroll</span>
           <div style={{ width: 1, height: 36, background: 'linear-gradient(to bottom, rgba(255,255,255,0.7), transparent)' }} />
+        </div>
+      </section>
+
+      {/* ── PRODUCTS ─────────────────────────────────────────────────────────── */}
+      <section style={{ background: surface, padding: '96px 0' }}>
+        <div style={{ maxWidth: 1200, margin: '0 auto', padding: '0 6vw' }}>
+          <div style={{ marginBottom: 56 }}>
+            <SectionLabel>What's included</SectionLabel>
+            <h2 style={{ fontSize: 'clamp(1.75rem, 3vw, 2.75rem)', fontWeight: 800, letterSpacing: '-0.03em', color: navy, lineHeight: 1.15, marginBottom: 14 }}>
+              Three products. One workspace.
+            </h2>
+            <p style={{ fontSize: '0.9375rem', color: subtle, maxWidth: 540, lineHeight: 1.75, margin: 0 }}>
+              Everything your team needs to plan, execute, and document — included in every plan.
+            </p>
+          </div>
+          <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: 16 }}>
+            <ProductCard
+              accent="#6366F1" accentBg="#EEF2FF"
+              icon={<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#6366F1" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><circle cx="12" cy="12" r="5"/><line x1="12" y1="1" x2="12" y2="3"/><line x1="12" y1="21" x2="12" y2="23"/><line x1="4.22" y1="4.22" x2="5.64" y2="5.64"/><line x1="18.36" y1="18.36" x2="19.78" y2="19.78"/><line x1="1" y1="12" x2="3" y2="12"/><line x1="21" y1="12" x2="23" y2="12"/><line x1="4.22" y1="19.78" x2="5.64" y2="18.36"/><line x1="18.36" y1="5.64" x2="19.78" y2="4.22"/></svg>}
+              name="Canvas" tagline="Visual planning"
+              features={['Visual mind maps', 'Jira export one-click', 'Real-time collaboration', '15+ templates']}
+              ctaLabel="Open Canvas →" to={isAuthenticated ? '/app/canvas' : '/register'}
+            />
+            <ProductCard
+              accent="#10B981" accentBg="#ECFDF5"
+              icon={<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#10B981" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg>}
+              name="CRM" tagline="Pipeline management"
+              features={['Pipeline management', 'Deal tracking', 'Contact & org management', 'Revenue forecasting']}
+              ctaLabel="Open CRM →" to={isAuthenticated ? '/app/crm' : '/register'}
+            />
+            <ProductCard
+              accent="#F59E0B" accentBg="#FFFBEB"
+              icon={<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#F59E0B" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="16" y1="13" x2="8" y2="13"/><line x1="16" y1="17" x2="8" y2="17"/><line x1="10" y1="9" x2="8" y2="9"/></svg>}
+              name="Wiki" tagline="Team wiki"
+              features={['Rich text editor', 'Version history', 'Page comments', 'Linked to Canvas nodes']}
+              ctaLabel="Open Docs →" to={isAuthenticated ? '/app/docs' : '/register'}
+            />
+          </div>
+        </div>
+      </section>
+
+      {/* ── QUICK START ──────────────────────────────────────────────────────── */}
+      <section style={{ background: bg, padding: '96px 0', borderTop: `3px solid ${navy}` }}>
+        <div style={{ maxWidth: 1200, margin: '0 auto', padding: '0 6vw' }}>
+          <div style={{ marginBottom: 56 }}>
+            <SectionLabel>Get started</SectionLabel>
+            <h2 style={{ fontSize: 'clamp(1.75rem, 3vw, 2.75rem)', fontWeight: 800, letterSpacing: '-0.03em', color: navy, lineHeight: 1.15, marginBottom: 14 }}>
+              Up and running in minutes
+            </h2>
+            <p style={{ fontSize: '0.9375rem', color: subtle, maxWidth: 460, lineHeight: 1.75, margin: 0 }}>
+              No setup, no credit card. Pick a product and start working.
+            </p>
+          </div>
+          <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: 24 }}>
+            {[
+              { num: '01', title: 'Create your account', body: 'Sign up free in 30 seconds. No card required.' },
+              { num: '02', title: 'Choose your first product', body: "Start with Canvas to plan visually, CRM to track deals, or Docs to document your team's knowledge." },
+              { num: '03', title: 'Invite your team', body: 'Share a link. Assign roles. Collaborate in real time.' },
+            ].map((step, i) => (
+              <div key={step.num} style={{ background: surface, border: `1px solid ${border}`, borderRadius: 8, padding: '32px 28px', display: 'flex', flexDirection: 'column' }}>
+                <div style={{ fontSize: '2.5rem', fontWeight: 900, color: bluePale, opacity: 0.35, lineHeight: 1, marginBottom: 16, letterSpacing: '-0.04em' }}>{step.num}</div>
+                <h3 style={{ fontSize: '1.0625rem', fontWeight: 700, color: navy, margin: '0 0 10px', lineHeight: 1.35 }}>{step.title}</h3>
+                <p style={{ fontSize: '0.875rem', color: subtle, lineHeight: 1.75, margin: 0, flex: 1 }}>{step.body}</p>
+                {i === 2 && (
+                  <Link
+                    to={isAuthenticated ? '/app/canvas' : '/register'}
+                    style={{ display: 'inline-block', marginTop: 20, background: blue, color: '#fff', textDecoration: 'none', fontWeight: 600, fontSize: '0.875rem', borderRadius: 3, padding: '8px 20px', alignSelf: 'flex-start', transition: 'background 0.15s' }}
+                    onMouseEnter={e => { e.currentTarget.style.background = blueHover }}
+                    onMouseLeave={e => { e.currentTarget.style.background = blue }}
+                  >
+                    Get started free →
+                  </Link>
+                )}
+              </div>
+            ))}
+          </div>
+        </div>
+      </section>
+
+      {/* ── TEMPLATES PREVIEW ───────────────────────────────────────────────── */}
+      <section style={{ background: surface, padding: '96px 0' }}>
+        <div style={{ maxWidth: 1200, margin: '0 auto', padding: '0 6vw' }}>
+          <div style={{ marginBottom: 48 }}>
+            <SectionLabel>Templates</SectionLabel>
+            <h2 style={{ fontSize: 'clamp(1.75rem, 3vw, 2.75rem)', fontWeight: 800, letterSpacing: '-0.03em', color: navy, lineHeight: 1.15, marginBottom: 14 }}>
+              Start faster with a template
+            </h2>
+            <p style={{ fontSize: '0.9375rem', color: subtle, maxWidth: 520, lineHeight: 1.75, margin: 0 }}>
+              40+ templates across Canvas, CRM, and Docs — pre-built for your workflow.
+            </p>
+          </div>
+          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: 12, marginBottom: 32 }}>
+            {[
+              { emoji: '🚀', category: 'Startup & Product', count: '8 templates' },
+              { emoji: '📈', category: 'Marketing', count: '6 templates' },
+              { emoji: '⚙️', category: 'Engineering', count: '7 templates' },
+              { emoji: '🎯', category: 'Strategy', count: '5 templates' },
+              { emoji: '👥', category: 'Team & HR', count: '6 templates' },
+              { emoji: '🎨', category: 'Design', count: '4 templates' },
+            ].map(t => (
+              <TemplateCategoryCard key={t.category} {...t} />
+            ))}
+          </div>
+          <Link
+            to="/templates"
+            style={{ display: 'inline-block', border: `2px solid ${border}`, color: navy, textDecoration: 'none', fontWeight: 600, fontSize: '0.875rem', borderRadius: 3, padding: '10px 24px', transition: 'border-color 0.15s, color 0.15s' }}
+            onMouseEnter={e => { e.currentTarget.style.borderColor = blue; e.currentTarget.style.color = blue }}
+            onMouseLeave={e => { e.currentTarget.style.borderColor = border; e.currentTarget.style.color = navy }}
+          >
+            Browse all 40+ templates →
+          </Link>
+        </div>
+      </section>
+
+      {/* ── MID-PAGE CTA ─────────────────────────────────────────────────────── */}
+      <section style={{ background: `linear-gradient(135deg, ${blue} 0%, ${heroBlue} 100%)`, padding: '72px 6vw', position: 'relative', overflow: 'hidden' }}>
+        {/* decorative radial */}
+        <div style={{ position: 'absolute', top: '50%', left: '60%', transform: 'translate(-50%,-50%)', width: 600, height: 400, borderRadius: '50%', background: 'radial-gradient(circle, rgba(76,154,255,0.18) 0%, transparent 65%)', pointerEvents: 'none' }} />
+
+        <div style={{ maxWidth: 800, margin: '0 auto', textAlign: 'center', position: 'relative', zIndex: 1 }}>
+          <p style={{ fontSize: '0.75rem', fontWeight: 700, letterSpacing: '0.1em', textTransform: 'uppercase', color: 'rgba(255,255,255,0.5)', marginBottom: 16 }}>
+            Get started today
+          </p>
+          <h2 style={{ fontSize: 'clamp(1.75rem, 3.5vw, 3rem)', fontWeight: 900, letterSpacing: '-0.03em', color: '#fff', lineHeight: 1.12, marginBottom: 16 }}>
+            Your team is already losing context.<br />
+            <span style={{ color: bluePale }}>Stop it in five minutes.</span>
+          </h2>
+          <p style={{ fontSize: '1rem', color: 'rgba(255,255,255,0.65)', marginBottom: 36, lineHeight: 1.75, maxWidth: 520, margin: '0 auto 36px' }}>
+            Free forever. No credit card. No setup. Open a canvas, map your sprint,
+            and push to Jira — all before your next standup.
+          </p>
+
+          <div style={{ display: 'flex', gap: 12, justifyContent: 'center', flexWrap: 'wrap', marginBottom: 24 }}>
+            {isAuthenticated ? (
+              <Link to="/app/canvas"
+                style={{ background: '#fff', color: blue, textDecoration: 'none', fontWeight: 700, fontSize: '1rem', borderRadius: 3, padding: '14px 36px', display: 'inline-block', boxShadow: '0 4px 20px rgba(0,0,0,0.2)', transition: 'background 0.15s' }}
+                onMouseEnter={e => { e.currentTarget.style.background = blueLight }}
+                onMouseLeave={e => { e.currentTarget.style.background = '#fff' }}>
+                Open your workspace →
+              </Link>
+            ) : (
+              <>
+                <Link to="/register"
+                  style={{ background: '#fff', color: blue, textDecoration: 'none', fontWeight: 700, fontSize: '1rem', borderRadius: 3, padding: '14px 36px', display: 'inline-block', boxShadow: '0 4px 20px rgba(0,0,0,0.2)', transition: 'background 0.15s' }}
+                  onMouseEnter={e => { e.currentTarget.style.background = blueLight }}
+                  onMouseLeave={e => { e.currentTarget.style.background = '#fff' }}>
+                  Start free — no card needed
+                </Link>
+                <Link to="/features"
+                  style={{ background: 'transparent', color: '#fff', textDecoration: 'none', fontWeight: 500, fontSize: '1rem', borderRadius: 3, padding: '14px 28px', display: 'inline-block', border: '2px solid rgba(255,255,255,0.35)', transition: 'border-color 0.15s' }}
+                  onMouseEnter={e => { e.currentTarget.style.borderColor = '#fff' }}
+                  onMouseLeave={e => { e.currentTarget.style.borderColor = 'rgba(255,255,255,0.35)' }}>
+                  See all features →
+                </Link>
+              </>
+            )}
+          </div>
+
+          {/* Trust badges */}
+          <div style={{ display: 'flex', gap: 28, justifyContent: 'center', flexWrap: 'wrap' }}>
+            {['Free forever', 'No credit card', 'Canvas + CRM + Docs', 'Jira sync included'].map(badge => (
+              <div key={badge} style={{ display: 'flex', alignItems: 'center', gap: 6, fontSize: '0.8125rem', color: 'rgba(255,255,255,0.55)' }}>
+                <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke={bluePale} strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+                  <polyline points="20 6 9 17 4 12"/>
+                </svg>
+                {badge}
+              </div>
+            ))}
+          </div>
         </div>
       </section>
 

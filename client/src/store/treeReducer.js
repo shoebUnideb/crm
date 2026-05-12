@@ -4,7 +4,7 @@ import {
   MOVE_NODE, SET_SHAPE, ADD_EDGE, DELETE_EDGE, APPLY_LAYOUT,
   DUPLICATE_NODE, EDIT_NODE_NOTES,
   COLLAPSE_ALL, EXPAND_ALL, AUTO_COLOR, SET_NODE_URL, PASTE_SUBTREE, BULK_DELETE,
-  SET_NODE_META, ADD_NODE_COMMENT, DELETE_NODE_COMMENT, COLLAPSE_TO_DEPTH, APPLY_JIRA_KEYS,
+  SET_NODE_META, ADD_NODE_COMMENT, DELETE_NODE_COMMENT, EDIT_NODE_COMMENT, COLLAPSE_TO_DEPTH, APPLY_JIRA_KEYS,
   SET_EDGE_TYPE, ADD_GROUP, DELETE_GROUP, RENAME_GROUP, APPLY_RADIAL_LAYOUT,
   TOGGLE_LOCK, TOGGLE_REACTION, ADD_AUDIT_ENTRY, REPARENT_NODE, SET_NODE_CHECKLIST, SET_EDGE_LABEL,
   SET_CUSTOM_FIELDS, MERGE_NODE, SPLIT_NODE,
@@ -358,6 +358,23 @@ export function treeReducer(state, action) {
         nodes: {
           ...state.nodes,
           [action.nodeId]: { ...node, comments: (node.comments || []).filter(c => c.id !== action.commentId) },
+        },
+      }
+    }
+
+    case EDIT_NODE_COMMENT: {
+      const node = state.nodes[action.nodeId]
+      if (!node) return state
+      return {
+        ...state,
+        nodes: {
+          ...state.nodes,
+          [action.nodeId]: {
+            ...node,
+            comments: (node.comments || []).map(c =>
+              c.id === action.commentId ? { ...c, text: action.text, editedAt: new Date().toISOString() } : c
+            ),
+          },
         },
       }
     }
