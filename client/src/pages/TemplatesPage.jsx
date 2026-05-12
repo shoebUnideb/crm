@@ -376,21 +376,6 @@ export default function TemplatesPage() {
             Choose from 100+ templates across Capsule, CRM, and Wiki. Pick one, open in the app, and customise from there.
           </p>
 
-          {/* Product count callout */}
-          <div style={{ display: 'inline-flex', gap: 20, background: 'rgba(0,82,204,0.05)', border: '1px solid rgba(0,82,204,0.14)', borderRadius: 4, padding: '8px 16px', marginBottom: 22 }}>
-            {[
-              { label: 'Capsule', count: CAPSULE_TEMPLATES.length, color: CAPSULE },
-              { label: 'CRM',     count: CRM_TEMPLATES.length,     color: CRM_C },
-              { label: 'Wiki',    count: WIKI_TEMPLATES.length,    color: WIKI_C },
-            ].map((p, i) => (
-              <span key={p.label} style={{ display: 'flex', alignItems: 'center', gap: 6, fontSize: '0.8125rem' }}>
-                {i > 0 && <span style={{ width: 1, height: 12, background: BORDER, display: 'inline-block' }} />}
-                <span style={{ fontWeight: 700, color: p.color }}>{p.count}</span>
-                <span style={{ color: SUBTLE }}>{p.label}</span>
-              </span>
-            ))}
-          </div>
-
           {/* Search */}
           <div style={{ position: 'relative', maxWidth: 400 }}>
             <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke={MUTED} strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"
