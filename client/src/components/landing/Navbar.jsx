@@ -399,7 +399,6 @@ export default function Navbar() {
             <NavLink to="/" isActive={isActive('/')}>Home</NavLink>
             <NavLink to="/platform" isActive={isActive('/platform')}>Platform</NavLink>
             <NavLink to="/templates" isActive={isActive('/templates')}>Templates</NavLink>
-            <NavLink to="/pricing" isActive={isActive('/pricing')}>Pricing</NavLink>
 
             {/* Solutions dropdown */}
             <div ref={solutionsRef} style={{ position: 'relative' }}>
@@ -505,7 +504,6 @@ export default function Navbar() {
           {[
             { label: 'Platform', to: '/platform' },
             { label: 'Templates', to: '/templates' },
-            { label: 'Pricing', to: '/pricing' },
             { label: 'Roadmap', to: '/roadmap' },
             { label: 'Changelog', to: '/changelog' },
           ].map(link => (
