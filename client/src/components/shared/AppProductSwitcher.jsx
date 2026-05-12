@@ -52,6 +52,20 @@ const PRODUCTS = [
       </svg>
     ),
   },
+  {
+    id: 'signal',
+    label: 'bahn Signal',
+    path: null,
+    subtitle: 'Team communication',
+    accent: '#E91E8C',
+    accentBg: '#fce4f3',
+    comingSoon: true,
+    icon: (
+      <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+        <path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/>
+      </svg>
+    ),
+  },
 ]
 
 export default function AppProductSwitcher({ currentProduct }) {
@@ -125,6 +139,7 @@ export default function AppProductSwitcher({ currentProduct }) {
                 <button
                   key={product.id}
                   onClick={() => {
+                    if (product.comingSoon) return
                     setOpen(false)
                     if (!isActive) navigate(product.path)
                   }}
@@ -133,11 +148,12 @@ export default function AppProductSwitcher({ currentProduct }) {
                     padding: '10px 12px', borderRadius: 8,
                     background: isActive ? product.accentBg : 'transparent',
                     border: isActive ? `1px solid ${product.accent}30` : '1px solid transparent',
-                    cursor: isActive ? 'default' : 'pointer', textAlign: 'left',
+                    cursor: product.comingSoon ? 'default' : isActive ? 'default' : 'pointer', textAlign: 'left',
                     transition: 'background 0.12s',
+                    opacity: product.comingSoon ? 0.6 : 1,
                   }}
-                  onMouseEnter={e => { if (!isActive) e.currentTarget.style.background = '#F4F5F7' }}
-                  onMouseLeave={e => { if (!isActive) e.currentTarget.style.background = isActive ? product.accentBg : 'transparent' }}
+                  onMouseEnter={e => { if (!isActive && !product.comingSoon) e.currentTarget.style.background = '#F4F5F7' }}
+                  onMouseLeave={e => { if (!isActive && !product.comingSoon) e.currentTarget.style.background = isActive ? product.accentBg : 'transparent' }}
                 >
                   <div style={{
                     width: 36, height: 36, borderRadius: 8,
@@ -152,6 +168,9 @@ export default function AppProductSwitcher({ currentProduct }) {
                       {product.label}
                       {product.id === 'crm' && (
                         <span style={{ fontSize: '0.5rem', fontWeight: 700, background: '#0052CC', color: '#fff', padding: '1px 5px', borderRadius: 3, letterSpacing: '0.06em', textTransform: 'uppercase' }}>Beta</span>
+                      )}
+                      {product.comingSoon && (
+                        <span style={{ fontSize: '0.5rem', fontWeight: 700, background: '#E91E8C', color: '#fff', padding: '1px 5px', borderRadius: 3, letterSpacing: '0.06em', textTransform: 'uppercase' }}>Soon</span>
                       )}
                     </div>
                     <div style={{ fontSize: '0.6875rem', color: '#97A0AF', marginTop: 1 }}>
