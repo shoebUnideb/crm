@@ -192,8 +192,8 @@ export default function AppProductSwitcher({ currentProduct }) {
                   <div style={{
                     width: 40, height: 40, borderRadius: 10, flexShrink: 0,
                     display: 'flex', alignItems: 'center', justifyContent: 'center',
-                    background: isActive ? product.accent : '#EBECF0',
-                    color: isActive ? '#fff' : '#5E6C84',
+                    background: isActive ? product.accent : `${product.accent}22`,
+                    color: isActive ? '#fff' : product.accent,
                   }}>
                     {product.icon}
                   </div>
