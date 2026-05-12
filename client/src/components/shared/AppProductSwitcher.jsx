@@ -123,16 +123,10 @@ export default function AppProductSwitcher({ currentProduct }) {
         <div style={{
           position: 'absolute', top: 'calc(100% + 8px)', right: 0,
           background: '#fff', border: '1px solid #DFE1E6', borderRadius: 10,
-          boxShadow: '0 10px 32px rgba(9,30,66,0.2)', width: 200, zIndex: 300,
-          overflow: 'hidden',
+          boxShadow: '0 10px 32px rgba(9,30,66,0.2)', width: 200, height: 200, zIndex: 300,
+          overflow: 'hidden', display: 'flex', flexDirection: 'column',
         }}>
-          <div style={{ padding: '8px 12px 6px', borderBottom: '1px solid #F4F5F7' }}>
-            <p style={{ margin: 0, fontSize: '0.6rem', fontWeight: 700, color: '#97A0AF', textTransform: 'uppercase', letterSpacing: '0.06em' }}>
-              Products
-            </p>
-          </div>
-
-          <div style={{ padding: 8, display: 'grid', gridTemplateColumns: 'repeat(2, 1fr)', gap: 4 }}>
+          <div style={{ flex: 1, padding: 8, display: 'grid', gridTemplateColumns: 'repeat(2, 1fr)', gap: 4 }}>
             {PRODUCTS.map(product => {
               const isActive = product.id === currentProduct
               return (
@@ -180,10 +174,6 @@ export default function AppProductSwitcher({ currentProduct }) {
                 </button>
               )
             })}
-          </div>
-
-          <div style={{ padding: '8px 16px 10px', borderTop: '1px solid #F4F5F7' }}>
-            <p style={{ margin: 0, fontSize: '0.6875rem', color: '#B3BAC5' }}>bahnOS · All products included</p>
           </div>
         </div>
       )}
