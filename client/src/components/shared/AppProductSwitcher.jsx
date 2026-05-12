@@ -178,38 +178,34 @@ export default function AppProductSwitcher({ currentProduct }) {
                     if (!isActive) navigate(product.path)
                   }}
                   style={{
-                    display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center',
-                    gap: 8, padding: '14px 8px', borderRadius: 10,
+                    display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'flex-start',
+                    gap: 6, padding: '12px 4px 10px', borderRadius: 10, height: 110,
                     background: isActive ? product.accentBg : 'transparent',
-                    border: isActive ? `1px solid ${product.accent}30` : '1px solid transparent',
+                    border: isActive ? `1px solid ${product.accent}25` : '1px solid transparent',
                     cursor: product.comingSoon ? 'default' : isActive ? 'default' : 'pointer',
                     transition: 'background 0.12s',
-                    opacity: product.comingSoon ? 0.55 : 1,
+                    opacity: product.comingSoon ? 0.5 : 1,
                   }}
                   onMouseEnter={e => { if (!isActive && !product.comingSoon) e.currentTarget.style.background = '#F4F5F7' }}
                   onMouseLeave={e => { if (!isActive && !product.comingSoon) e.currentTarget.style.background = isActive ? product.accentBg : 'transparent' }}
                 >
                   <div style={{
-                    width: 44, height: 44, borderRadius: 12,
+                    width: 40, height: 40, borderRadius: 10, flexShrink: 0,
                     display: 'flex', alignItems: 'center', justifyContent: 'center',
                     background: isActive ? product.accent : '#EBECF0',
                     color: isActive ? '#fff' : '#5E6C84',
                   }}>
                     {product.icon}
                   </div>
-                  <div style={{ textAlign: 'center' }}>
-                    <div style={{ fontSize: '0.75rem', fontWeight: 600, color: isActive ? product.accent : '#172B4D', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 4, flexWrap: 'wrap' }}>
+                  <div style={{ textAlign: 'center', width: '100%' }}>
+                    <div style={{ fontSize: '0.6875rem', fontWeight: 600, color: isActive ? product.accent : '#172B4D', lineHeight: 1.2, marginBottom: 2 }}>
                       {product.label}
-                      {product.id === 'crm' && (
-                        <span style={{ fontSize: '0.5rem', fontWeight: 700, background: '#0052CC', color: '#fff', padding: '1px 4px', borderRadius: 3, letterSpacing: '0.06em', textTransform: 'uppercase' }}>Beta</span>
-                      )}
-                      {product.comingSoon && (
-                        <span style={{ fontSize: '0.5rem', fontWeight: 700, background: '#E91E8C', color: '#fff', padding: '1px 4px', borderRadius: 3, letterSpacing: '0.06em', textTransform: 'uppercase' }}>Soon</span>
-                      )}
                     </div>
-                    <div style={{ fontSize: '0.625rem', color: '#97A0AF', marginTop: 1 }}>
-                      {product.subtitle}
-                    </div>
+                    {(product.id === 'crm' || product.comingSoon) && (
+                      <span style={{ fontSize: '0.5rem', fontWeight: 700, background: product.comingSoon ? '#E91E8C' : '#0052CC', color: '#fff', padding: '1px 4px', borderRadius: 3, letterSpacing: '0.06em', textTransform: 'uppercase' }}>
+                        {product.comingSoon ? 'Soon' : 'Beta'}
+                      </span>
+                    )}
                   </div>
                 </button>
               )
