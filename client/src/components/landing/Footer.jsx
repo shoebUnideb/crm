@@ -100,10 +100,7 @@ export default function Footer() {
         </div>
 
         {/* Bottom bar */}
-        <div style={{ marginTop: 48, paddingTop: 20, paddingBottom: 24, borderTop: `1px solid ${borderColor}`, display: 'flex', alignItems: 'center', justifyContent: 'space-between', flexWrap: 'wrap', gap: 8 }}>
-          <p style={{ fontSize: '0.75rem', color: textMuted, margin: 0 }}>
-            © {new Date().getFullYear()} bahnOS. All rights reserved.
-          </p>
+        <div style={{ marginTop: 48, paddingTop: 20, paddingBottom: 24, borderTop: `1px solid ${borderColor}`, display: 'flex', alignItems: 'center', justifyContent: 'flex-end', flexWrap: 'wrap', gap: 8 }}>
           <p style={{ fontSize: '0.75rem', color: textMuted, margin: 0 }}>
             Connected operational workspace.
           </p>

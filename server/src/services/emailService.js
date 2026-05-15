@@ -53,7 +53,6 @@ export async function sendVerificationEmail(email, otp) {
           </p>
         </td></tr>
         <tr><td style="background:#FAFBFC;border-top:1px solid #DFE1E6;padding:16px 32px;text-align:center">
-          <span style="font-size:12px;color:#97A0AF">© 2025 bahnOS. All rights reserved.</span>
         </td></tr>
       </table>
     </td></tr>
